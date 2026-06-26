@@ -44,7 +44,7 @@ function authorized(req: IncomingMessage): boolean {
   return header === `Bearer ${expected}`;
 }
 
-function isLocalHost(host: string): boolean {
+export function isLocalHost(host: string): boolean {
   return host === "127.0.0.1" || host === "localhost" || host === "::1";
 }
 
