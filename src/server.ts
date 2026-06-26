@@ -3,8 +3,9 @@ import { FlarumClient } from "./flarum-client.js";
 import { registerTools } from "./tools/index.js";
 import { registerExtensionTools } from "./tools/extensions.js";
 import { registerDocsTools } from "./tools/docs.js";
+import { diagClientFromEnv, registerDiagnosticTools } from "./tools/diagnostics.js";
 
-export const VERSION = "0.4.0";
+export const VERSION = "0.5.0";
 
 /**
  * Default outbound User-Agent. Explicit and identifiable so that forums behind a
@@ -73,5 +74,8 @@ export function createMcpServer(client: FlarumClient): McpServer {
   registerTools(server, client);
   if (extensionsEnabled()) registerExtensionTools(server, client);
   if (docsEnabled()) registerDocsTools(server, process.env.FLARUM_USER_AGENT || DEFAULT_USER_AGENT);
+  // Managed-only: registers just when srvup injected DIAG_URL (hosting stacks).
+  const diag = diagClientFromEnv();
+  if (diag) registerDiagnosticTools(server, diag);
   return server;
 }
