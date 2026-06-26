@@ -34,3 +34,13 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+      # Roll the new image across the Link Robins managed-MCP fleet immediately.
+      # Non-fatal: a missing secret / unreachable host never fails the publish.
+      - name: Roll out to managed-MCP fleet
+        run: |
+          curl -fsS -X POST https://linkrobins.com/hosting/mcp/release-rollout \
+            -H "Authorization: Bearer ${{ secrets.MCP_ROLLOUT_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"version\":\"${{ github.ref_name }}\"}" \
+          && echo "fleet rollout triggered" || echo "rollout trigger skipped/failed (non-fatal)"
