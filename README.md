@@ -95,7 +95,7 @@ How long-running installs are reported depends on your forum's queue:
 
 `flarum_ext_install` does not enable the extension unless you pass `enable: true`. Use `flarum_ext_why_not` first to confirm a package is compatible with your Flarum version. For bulk or major updates, take a backup first.
 
-**Enabling can break a forum.** If an enabled extension is incompatible with your Flarum version, it can fail to boot and take the whole site down (every page, including the admin panel and this tool's own API, starts returning a 500). At that point the manager cannot disable it for you: recovery means removing the extension from the `extensions_enabled` setting in the database and `composer remove`-ing it by hand. This is why install does not auto-enable by default, and why a backup before enabling unfamiliar extensions is worth it.
+**Enabling can break a forum.** The manager refuses to install an extension whose published Flarum compatibility doesn't match your version, but that check is best-effort: it reads the latest stable release's declared `flarum/core` constraint, is skipped when Packagist is unreachable or the package declares nothing, and the version Composer actually installs can differ from the one it checked. So an extension can pass the check and still fail to boot when enabled, taking the whole site down (every page, including the admin panel and this tool's own API, starts returning a 500). The manager cannot then disable it for you: recovery means removing the extension from the `extensions_enabled` setting in the database and `composer remove`-ing it by hand. This is why install does not auto-enable by default, and why a backup before enabling unfamiliar extensions is worth it.
 
 ## Install & run
 
