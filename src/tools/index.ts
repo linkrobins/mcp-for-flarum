@@ -1,68 +1,7 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { FlarumClient, FlarumError } from "../flarum-client.js";
-
-/** Render any value as a tool result, surfacing Flarum API errors cleanly. */
-function result(data: unknown) {
-  return {
-    content: [
-      { type: "text" as const, text: JSON.stringify(data, null, 2) },
-    ],
-  };
-}
-
-function errorResult(err: unknown) {
-  if (err instanceof FlarumError) {
-    return {
-      isError: true,
-      content: [
-        {
-          type: "text" as const,
-          text: `Flarum API error (${err.status}):\n${JSON.stringify(err.body, null, 2)}`,
-        },
-      ],
-    };
-  }
-  return {
-    isError: true,
-    content: [
-      { type: "text" as const, text: `Error: ${(err as Error).message}` },
-    ],
-  };
-}
-
-/**
- * Truncate long string attributes in a JSON:API document to protect the
- * client's context window (and the user's token bill). A forum's post bodies
- * can each be many KB of HTML; returning 50 of them whole is what blows up an
- * agent. maxChars <= 0 disables trimming.
- */
-function trimDoc(doc: unknown, maxChars: number): unknown {
-  if (maxChars <= 0 || !doc || typeof doc !== "object") return doc;
-  const trimResource = (r: unknown) => {
-    const res = r as { attributes?: Record<string, unknown> };
-    if (res && typeof res === "object" && res.attributes && typeof res.attributes === "object") {
-      for (const [k, v] of Object.entries(res.attributes)) {
-        if (typeof v === "string" && v.length > maxChars) {
-          res.attributes[k] = `${v.slice(0, maxChars)}... [truncated ${v.length - maxChars} chars]`;
-        }
-      }
-    }
-  };
-  const d = doc as { data?: unknown; included?: unknown };
-  if (Array.isArray(d.data)) d.data.forEach(trimResource);
-  else trimResource(d.data);
-  if (Array.isArray(d.included)) d.included.forEach(trimResource);
-  return doc;
-}
-
-const fieldsSchema = z
-  .record(z.string(), z.string())
-  .optional()
-  .describe(
-    'Sparse fieldsets: return only named fields per type to save tokens, ' +
-      'e.g. { discussions: "title,slug,commentCount", users: "username" }.',
-  );
+import { FlarumClient } from "../flarum-client.js";
+import { result, errorResult, trimDoc, fieldsSchema } from "./shared.js";
 
 export function registerTools(server: McpServer, client: FlarumClient): void {
   // ---- Read tools: always available (even in read-only mode) ----

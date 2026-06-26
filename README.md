@@ -28,6 +28,23 @@ It gives any MCP-compatible AI client (Claude Code, Claude Desktop, Cursor, VS C
 | `flarum_create_discussion` | Start a thread (title + content + optional tags) |
 | `flarum_reply` | Reply to a discussion |
 
+**Extension management (opt-in, off by default):**
+
+Registered only when `FLARUM_EXTENSIONS=1` and the forum has the official [`flarum/extension-manager`](https://github.com/flarum/extension-manager) installed. These drive Composer on the server, so they need an admin key and write mode. See [Managing extensions](#managing-extensions).
+
+| Tool | What it does |
+| --- | --- |
+| `flarum_ext_search` | Search Packagist for installable extensions, language packs, or themes |
+| `flarum_ext_why_not` | Dry-run compatibility check for a package (changes nothing) |
+| `flarum_ext_install` | Install an extension (optionally enable it after) |
+| `flarum_ext_update` | Update one extension (`soft` in-range, or `hard` to latest) |
+| `flarum_ext_remove` | Uninstall an extension |
+| `flarum_ext_toggle` | Enable/disable an installed extension (no Composer; instant) |
+| `flarum_ext_check_updates` | Check Packagist for available updates |
+| `flarum_ext_bulk_update` | Bulk update: `minor`, `major` (with `dryRun`), or `global` |
+| `flarum_ext_configure_composer` | Read/set `minimum-stability`, repositories, or private registry auth |
+| `flarum_ext_tasks` | List install/update job history and Composer output (poll async jobs) |
+
 ## Configuration
 
 | Variable | Required | Description |
@@ -36,6 +53,7 @@ It gives any MCP-compatible AI client (Claude Code, Claude Desktop, Cursor, VS C
 | `FLARUM_API_KEY` | for writes / private data | A Flarum API key (from the `api_keys` table). Without it, only public read access is available. |
 | `FLARUM_USER_ID` | optional | Act as this user id when using a master API key |
 | `FLARUM_MODE` | optional | `write` (default) or `read`. In `read` mode the server refuses every mutating request (create/update/delete and any non-GET `flarum_request`) and the write tools are hidden. `READ_ONLY=1` does the same. Use it to point an AI at a real forum without risking changes. |
+| `FLARUM_EXTENSIONS` | optional | `1`/`true` registers the extension-management tools (install/update/remove extensions via `flarum/extension-manager`). Off by default; requires write mode and an admin key. See [Managing extensions](#managing-extensions). |
 | `FLARUM_TIMEOUT` | optional | Request timeout in ms (default 30000) |
 | `FLARUM_USER_AGENT` | optional | Override the `User-Agent` sent to your forum. Defaults to `mcp-for-flarum/<version> (+repo url)`. See [Behind Cloudflare or a WAF](#behind-cloudflare-or-a-waf). |
 
@@ -61,6 +79,23 @@ VALUES (REPLACE(UUID(), '-', ''), 1, NOW());
 ```
 
 Use the resulting `key` as `FLARUM_API_KEY`. Setting `user_id` (or `FLARUM_USER_ID`) makes the key act as that user, so its permissions are exactly that user's permissions.
+
+### Managing extensions
+
+Set `FLARUM_EXTENSIONS=1` to let the AI install, update, remove, enable, and disable extensions. This is **off by default** because it runs Composer on your server and can change what code your forum runs, which is far more powerful than editing content. It requires all of:
+
+- The official [`flarum/extension-manager`](https://github.com/flarum/extension-manager) installed and enabled on the forum.
+- Write mode (not `FLARUM_MODE=read`) and an API key whose user is an **admin**.
+- A server that can actually run Composer: the PHP functions `proc_open` and `escapeshellarg` available, and `vendor/`, `storage/`, `composer.json`, and `composer.lock` writable.
+
+How long-running installs are reported depends on your forum's queue:
+
+- **Background queue** (Redis, database, etc. with a running worker): the call returns once the job finishes. The tools poll the manager's task list for you and return the Composer output. If no worker is consuming jobs, the call times out and says so rather than hanging.
+- **Synchronous** (`sync` queue, or the manager's "run jobs in background" setting off): the request blocks until Composer finishes and returns the result inline. Very large updates can hit PHP/gateway timeouts even though Composer keeps running.
+
+`flarum_ext_install` does not enable the extension unless you pass `enable: true`. Use `flarum_ext_why_not` first to confirm a package is compatible with your Flarum version. For bulk or major updates, take a backup first.
+
+**Enabling can break a forum.** If an enabled extension is incompatible with your Flarum version, it can fail to boot and take the whole site down (every page, including the admin panel and this tool's own API, starts returning a 500). At that point the manager cannot disable it for you: recovery means removing the extension from the `extensions_enabled` setting in the database and `composer remove`-ing it by hand. This is why install does not auto-enable by default, and why a backup before enabling unfamiliar extensions is worth it.
 
 ## Install & run
 

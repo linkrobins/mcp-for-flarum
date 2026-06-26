@@ -1,8 +1,9 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { FlarumClient } from "./flarum-client.js";
 import { registerTools } from "./tools/index.js";
+import { registerExtensionTools } from "./tools/extensions.js";
 
-export const VERSION = "0.2.2";
+export const VERSION = "0.3.0";
 
 /**
  * Default outbound User-Agent. Explicit and identifiable so that forums behind a
@@ -44,9 +45,21 @@ export function clientFromEnv(): FlarumClient {
   });
 }
 
+/**
+ * Whether the extension-management toolset is enabled. Off by default: these
+ * tools can composer-install/update/remove extensions, which is far higher
+ * privilege than ordinary content writes, so they require an explicit opt-in
+ * (FLARUM_EXTENSIONS=1/true/yes/on) on top of write mode and an admin key. The
+ * target forum must also have flarum/extension-manager installed.
+ */
+export function extensionsEnabled(): boolean {
+  return /^(1|true|yes|on)$/i.test(process.env.FLARUM_EXTENSIONS ?? "");
+}
+
 /** Build a fully-wired MCP server for a given Flarum client. */
 export function createMcpServer(client: FlarumClient): McpServer {
   const server = new McpServer({ name: "mcp-for-flarum", version: VERSION });
   registerTools(server, client);
+  if (extensionsEnabled()) registerExtensionTools(server, client);
   return server;
 }
