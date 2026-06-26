@@ -2,8 +2,9 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { FlarumClient } from "./flarum-client.js";
 import { registerTools } from "./tools/index.js";
 import { registerExtensionTools } from "./tools/extensions.js";
+import { registerDocsTools } from "./tools/docs.js";
 
-export const VERSION = "0.3.0";
+export const VERSION = "0.4.0";
 
 /**
  * Default outbound User-Agent. Explicit and identifiable so that forums behind a
@@ -56,10 +57,21 @@ export function extensionsEnabled(): boolean {
   return /^(1|true|yes|on)$/i.test(process.env.FLARUM_EXTENSIONS ?? "");
 }
 
+/**
+ * Whether the official-docs tools (flarum_docs_search/get/list) are enabled.
+ * On by default: they only read the public docs site and never touch the
+ * configured forum or its API key, so they're safe in any mode (including
+ * read-only and with no API key). Opt out with FLARUM_DOCS=0/false/off.
+ */
+export function docsEnabled(): boolean {
+  return !/^(0|false|no|off)$/i.test(process.env.FLARUM_DOCS ?? "");
+}
+
 /** Build a fully-wired MCP server for a given Flarum client. */
 export function createMcpServer(client: FlarumClient): McpServer {
   const server = new McpServer({ name: "mcp-for-flarum", version: VERSION });
   registerTools(server, client);
   if (extensionsEnabled()) registerExtensionTools(server, client);
+  if (docsEnabled()) registerDocsTools(server, process.env.FLARUM_USER_AGENT || DEFAULT_USER_AGENT);
   return server;
 }

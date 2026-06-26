@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented here.
 
+## 0.4.0
+
+- Official Flarum 2.0 docs, built in. The AI can now search and read the official documentation at docs.flarum.org/2.x while it works on your forum, so it can check how a setting, permission, or feature is meant to work before changing anything. Three new tools: `flarum_docs_search` (find the right page), `flarum_docs_get` (read a full page), and `flarum_docs_list` (browse what pages exist). It reads the live documentation, so answers always reflect the current 2.0 docs without any update on your side. These only read the public docs (never your forum or its key), so they work even in read-only mode and without an API key. On by default; turn them off with `FLARUM_DOCS=0`.
+
 ## 0.3.0
 
 - Extension management (opt-in). When you set `FLARUM_EXTENSIONS=1` and your forum has the official `flarum/extension-manager` installed, the AI can search Packagist for extensions, check whether one is compatible before installing, install/update/remove extensions, enable or disable them, and run bulk updates, all over the API (the manager runs Composer on the server). It is off by default because installing or removing extensions is far more powerful than ordinary content edits, so it needs an explicit opt-in on top of write mode and an admin key. New tools: `flarum_ext_search`, `flarum_ext_tasks`, `flarum_ext_why_not`, `flarum_ext_install`, `flarum_ext_update`, `flarum_ext_remove`, `flarum_ext_toggle`, `flarum_ext_check_updates`, `flarum_ext_bulk_update`, `flarum_ext_configure_composer`. Long-running installs are handled whether your forum runs jobs in the background (it waits for the result) or inline.
