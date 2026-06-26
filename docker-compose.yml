@@ -1,0 +1,15 @@
+# Self-host the hosted (HTTP) mode. Copy this file, set your values, and run:
+#   docker compose up -d
+# Then point an MCP client (or your reverse proxy) at http://localhost:3000/mcp
+services:
+  mcp-for-flarum:
+    image: ghcr.io/linkrobins/mcp-for-flarum:latest
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      MCP_TRANSPORT: http
+      FLARUM_URL: https://discuss.example.com
+      FLARUM_API_KEY: change-me
+      # Strongly recommended: require Authorization: Bearer <this> on /mcp
+      MCP_AUTH_TOKEN: change-me-to-a-long-random-secret

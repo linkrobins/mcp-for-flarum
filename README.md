@@ -48,28 +48,35 @@ VALUES (REPLACE(UUID(), '-', ''), 1, NOW());
 
 Use the resulting `key` as `FLARUM_API_KEY`. Setting `user_id` (or `FLARUM_USER_ID`) makes the key act as that user, so its permissions are exactly that user's permissions.
 
-## Usage
+## Install & run
 
-Run directly with `npx` (no install):
+Self-host it with the official Docker image, or build it from source. (It is intentionally **not** published to npm.)
 
-```bash
-FLARUM_URL=https://discuss.example.com FLARUM_API_KEY=xxxxx npx -y mcp-for-flarum
-```
+### Option 1: Docker (recommended)
 
-### Claude Code
+For a local Claude client (stdio):
 
 ```bash
-claude mcp add flarum -- env FLARUM_URL=https://discuss.example.com FLARUM_API_KEY=xxxxx npx -y mcp-for-flarum
+docker run -i --rm \
+  -e FLARUM_URL=https://discuss.example.com \
+  -e FLARUM_API_KEY=xxxxx \
+  ghcr.io/linkrobins/mcp-for-flarum
 ```
 
-### Claude Desktop / Cursor / Windsurf (JSON config)
+Claude Code:
+
+```bash
+claude mcp add flarum -- docker run -i --rm -e FLARUM_URL=https://discuss.example.com -e FLARUM_API_KEY=xxxxx ghcr.io/linkrobins/mcp-for-flarum
+```
+
+Claude Desktop / Cursor / Windsurf (JSON config):
 
 ```json
 {
   "mcpServers": {
     "flarum": {
-      "command": "npx",
-      "args": ["-y", "mcp-for-flarum"],
+      "command": "docker",
+      "args": ["run", "-i", "--rm", "-e", "FLARUM_URL", "-e", "FLARUM_API_KEY", "ghcr.io/linkrobins/mcp-for-flarum"],
       "env": {
         "FLARUM_URL": "https://discuss.example.com",
         "FLARUM_API_KEY": "xxxxx"
@@ -78,6 +85,21 @@ claude mcp add flarum -- env FLARUM_URL=https://discuss.example.com FLARUM_API_K
   }
 }
 ```
+
+### Option 2: From source (no Docker)
+
+```bash
+git clone https://github.com/linkrobins/mcp-for-flarum.git
+cd mcp-for-flarum
+npm install && npm run build
+FLARUM_URL=https://discuss.example.com FLARUM_API_KEY=xxxxx node dist/index.js
+```
+
+Then point your client's `command` at `node /absolute/path/to/mcp-for-flarum/dist/index.js`.
+
+### Prefer not to run anything?
+
+A managed, hosted version is offered by Link Robins, no install, no key management, and usable from web clients. See [linkrobins.com](https://linkrobins.com).
 
 ## Hosting (HTTP transport)
 
@@ -109,16 +131,18 @@ Hosting-specific configuration:
 
 > Security: a hosted instance can read, write, and delete on the forum its key targets. Always run it behind TLS, set `MCP_AUTH_TOKEN` (or front it with your own auth/OAuth proxy), and give the API key's user the least privilege it needs. The Flarum API key stays server-side and is never exposed to clients.
 
-### Docker
+### Docker (hosted mode)
 
 ```bash
-docker build -t mcp-for-flarum .
 docker run -p 3000:3000 \
+  -e MCP_TRANSPORT=http \
   -e FLARUM_URL=https://discuss.example.com \
   -e FLARUM_API_KEY=xxxxx \
   -e MCP_AUTH_TOKEN=a-long-random-secret \
-  mcp-for-flarum
+  ghcr.io/linkrobins/mcp-for-flarum
 ```
+
+Or use the included [`docker-compose.yml`](docker-compose.yml): set your values and `docker compose up -d`.
 
 ## Development
 
