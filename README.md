@@ -129,6 +129,8 @@ Hosting-specific configuration:
 | `PORT` | `3000` | HTTP port |
 | `HOST` | `127.0.0.1` | Bind address. Fails closed: it **refuses to bind a non-localhost address unless `MCP_AUTH_TOKEN` is set**. To expose it (e.g. in Docker), set `HOST=0.0.0.0` and a token. |
 | `MCP_AUTH_TOKEN` | _(none)_ | If set, requests must send `Authorization: Bearer <token>`. Required to expose a non-localhost interface. |
+| `SNAPSHOT_URL` | _(none)_ | Optional managed-hosting hook. When set, the server fires a best-effort `POST` here before the **first write** in a session, so a restore point can be taken before AI-driven edits. Failures never block writes; unset for self-hosters. |
+| `SNAPSHOT_TOKEN` | `MCP_AUTH_TOKEN` | Bearer token sent with the `SNAPSHOT_URL` ping. Defaults to `MCP_AUTH_TOKEN`. |
 
 > Security: a hosted instance can read, write, and delete on the forum its key targets. Always run it behind TLS, set `MCP_AUTH_TOKEN` (or front it with your own auth/OAuth proxy), and give the API key's user the least privilege it needs. The Flarum API key stays server-side and is never exposed to clients.
 

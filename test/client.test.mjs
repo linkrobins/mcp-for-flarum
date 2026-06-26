@@ -88,6 +88,47 @@ test("GET never sends a body, even if one is passed", async () => {
   assert.equal(calls[0].init.body, undefined);
 });
 
+test("pre-change snapshot: fires once before the first write, not on reads", async () => {
+  stubFetch({ data: {} });
+  const c = new FlarumClient({
+    baseUrl: "http://forum.test",
+    snapshotUrl: "http://host.test/snap",
+    snapshotToken: "TOK",
+  });
+  // A read must not trigger a snapshot.
+  await c.request({ path: "/discussions" });
+  assert.equal(calls.filter((x) => x.url === "http://host.test/snap").length, 0);
+
+  // First write triggers exactly one snapshot POST with the bearer token.
+  await c.request({ method: "POST", path: "/discussions", body: { data: {} } });
+  // Second write must NOT trigger another (once per instance/session).
+  await c.request({ method: "PATCH", path: "/discussions/1", body: { data: {} } });
+
+  const snaps = calls.filter((x) => x.url === "http://host.test/snap");
+  assert.equal(snaps.length, 1, "exactly one snapshot for multiple writes");
+  assert.equal(snaps[0].init.method, "POST");
+  assert.equal(snaps[0].init.headers.Authorization, "Bearer TOK");
+});
+
+test("pre-change snapshot: never fires in read-only mode (write refused first)", async () => {
+  stubFetch({});
+  const c = new FlarumClient({
+    baseUrl: "http://forum.test",
+    readOnly: true,
+    snapshotUrl: "http://host.test/snap",
+    snapshotToken: "TOK",
+  });
+  await assert.rejects(() => c.request({ method: "POST", path: "/x" }), /read-only/i);
+  assert.equal(calls.length, 0, "no snapshot, no write");
+});
+
+test("pre-change snapshot: no-op when snapshot env is unset", async () => {
+  stubFetch({ data: {} });
+  const c = new FlarumClient({ baseUrl: "http://forum.test" });
+  await c.request({ method: "POST", path: "/discussions", body: { data: {} } });
+  assert.equal(calls.length, 1, "only the write itself, no snapshot call");
+});
+
 test("throws FlarumError carrying status and parsed body on non-2xx", async () => {
   const errBody = { errors: [{ status: "404", code: "not_found" }] };
   stubFetch(errBody, 404);

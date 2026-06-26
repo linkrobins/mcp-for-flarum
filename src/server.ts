@@ -2,7 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { FlarumClient } from "./flarum-client.js";
 import { registerTools } from "./tools/index.js";
 
-export const VERSION = "0.2.0";
+export const VERSION = "0.2.1";
 
 /** Build a FlarumClient from environment variables. */
 export function clientFromEnv(): FlarumClient {
@@ -19,12 +19,19 @@ export function clientFromEnv(): FlarumClient {
     process.env.FLARUM_MODE?.toLowerCase() === "read" ||
     /^(1|true|yes|on)$/i.test(process.env.READ_ONLY ?? "");
 
+  // Managed hosting only: SNAPSHOT_URL + SNAPSHOT_TOKEN enable a best-effort
+  // pre-change snapshot before the first write. Unset for self-hosters (no-op).
+  const snapshotUrl = process.env.SNAPSHOT_URL || undefined;
+  const snapshotToken = process.env.SNAPSHOT_TOKEN || process.env.MCP_AUTH_TOKEN || undefined;
+
   return new FlarumClient({
     baseUrl,
     apiKey: process.env.FLARUM_API_KEY,
     userId: process.env.FLARUM_USER_ID,
     timeoutMs: process.env.FLARUM_TIMEOUT ? Number(process.env.FLARUM_TIMEOUT) : undefined,
     readOnly,
+    snapshotUrl,
+    snapshotToken,
   });
 }
 

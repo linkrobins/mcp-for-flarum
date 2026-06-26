@@ -23,6 +23,15 @@ export interface FlarumClientOptions {
    * flarum_request escape hatch -- can bypass it.
    */
   readOnly?: boolean;
+  /**
+   * Optional pre-change snapshot hook (managed hosting). When set, the client
+   * pings this URL with `Authorization: Bearer <snapshotToken>` before the FIRST
+   * mutating request, so a restore point predates AI-driven edits. Best-effort:
+   * failures never block the write. The host side debounces, so calling on every
+   * write-bearing request (stateless transport) is safe.
+   */
+  snapshotUrl?: string;
+  snapshotToken?: string;
 }
 
 export interface FlarumRequestOptions {
@@ -52,6 +61,10 @@ export class FlarumClient {
   private userId?: string | number;
   private timeoutMs: number;
   readonly readOnly: boolean;
+  private snapshotUrl?: string;
+  private snapshotToken?: string;
+  /** One snapshot trigger per client instance (= per stateless request). */
+  private snapshotRequested = false;
 
   constructor(opts: FlarumClientOptions) {
     // Normalise: strip trailing slash, ensure we target the /api root.
@@ -60,6 +73,33 @@ export class FlarumClient {
     this.userId = opts.userId;
     this.timeoutMs = opts.timeoutMs ?? 30_000;
     this.readOnly = opts.readOnly ?? false;
+    this.snapshotUrl = opts.snapshotUrl;
+    this.snapshotToken = opts.snapshotToken;
+  }
+
+  /**
+   * Fire a pre-change snapshot request (best-effort, never throws). Called once,
+   * before the first write. The host responds fast (it just queues a snapshot)
+   * and debounces, so we don't await on the critical path beyond a short cap.
+   */
+  private triggerSnapshot(): void {
+    if (this.snapshotRequested || !this.snapshotUrl || !this.snapshotToken) return;
+    this.snapshotRequested = true;
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 5_000);
+    fetch(this.snapshotUrl, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${this.snapshotToken}`,
+        "Content-Type": "application/json",
+      },
+      body: "{}",
+      signal: ctrl.signal,
+    })
+      .catch(() => {
+        /* snapshot is a safety net, not a gate: swallow all failures */
+      })
+      .finally(() => clearTimeout(t));
   }
 
   private apiRoot(): string {
@@ -106,13 +146,19 @@ export class FlarumClient {
     const method = (opts.method ?? "GET").toUpperCase();
     const path = opts.path.startsWith("/") ? opts.path : `/${opts.path}`;
 
+    const mutating = method !== "GET" && method !== "HEAD" && method !== "OPTIONS";
+
     // Read-only guard: the single chokepoint every tool flows through.
-    if (this.readOnly && method !== "GET" && method !== "HEAD" && method !== "OPTIONS") {
+    if (this.readOnly && mutating) {
       throw new Error(
         `Refusing ${method} ${path}: server is in read-only mode. ` +
           `Set FLARUM_MODE=write (and remove READ_ONLY) to allow writes.`,
       );
     }
+
+    // Pre-change safety snapshot: a write is about to happen and is allowed —
+    // ask the host for a restore point first (best-effort, once per session).
+    if (mutating) this.triggerSnapshot();
 
     const url = `${this.apiRoot()}${path}${this.buildQuery(opts.query)}`;
 
