@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented here.
 
+## 0.2.2
+
+- Send a descriptive `User-Agent` (`mcp-for-flarum/<version> (+repo)`) on every request to your forum, overridable with `FLARUM_USER_AGENT`. Forums behind Cloudflare or a WAF often reject requests with a generic/empty user-agent (Cloudflare error 1010) before they reach Flarum; an identifiable UA avoids the default rules and lets admins allowlist the tool by name. Added a "Behind Cloudflare or a WAF" section to the README.
+
 ## 0.2.0
 
 Safety and ergonomics for pointing it at real forums.

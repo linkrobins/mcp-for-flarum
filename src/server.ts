@@ -2,7 +2,15 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { FlarumClient } from "./flarum-client.js";
 import { registerTools } from "./tools/index.js";
 
-export const VERSION = "0.2.1";
+export const VERSION = "0.2.2";
+
+/**
+ * Default outbound User-Agent. Explicit and identifiable so that forums behind a
+ * Cloudflare/WAF that blocks generic or empty user-agents (Cloudflare error 1010)
+ * don't reject the server, and so admins can allowlist this tool by name.
+ * Override with FLARUM_USER_AGENT.
+ */
+export const DEFAULT_USER_AGENT = `mcp-for-flarum/${VERSION} (+https://github.com/linkrobins/mcp-for-flarum)`;
 
 /** Build a FlarumClient from environment variables. */
 export function clientFromEnv(): FlarumClient {
@@ -28,6 +36,7 @@ export function clientFromEnv(): FlarumClient {
     baseUrl,
     apiKey: process.env.FLARUM_API_KEY,
     userId: process.env.FLARUM_USER_ID,
+    userAgent: process.env.FLARUM_USER_AGENT || DEFAULT_USER_AGENT,
     timeoutMs: process.env.FLARUM_TIMEOUT ? Number(process.env.FLARUM_TIMEOUT) : undefined,
     readOnly,
     snapshotUrl,

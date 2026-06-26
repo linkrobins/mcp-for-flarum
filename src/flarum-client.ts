@@ -18,6 +18,15 @@ export interface FlarumClientOptions {
   userId?: string | number;
   timeoutMs?: number;
   /**
+   * User-Agent sent on every request to the Flarum API. An explicit, identifiable
+   * UA matters because many forums sit behind Cloudflare (or similar) WAFs that
+   * block requests with a generic/empty user-agent (Cloudflare error 1010,
+   * "browser_signature_banned"). A descriptive UA both dodges those default rules
+   * and lets admins allowlist this tool specifically. Defaults are set by the
+   * caller (see server.ts); a falsy value sends no UA header.
+   */
+  userAgent?: string;
+  /**
    * When true, the client refuses any mutating request (POST/PUT/PATCH/DELETE).
    * Enforced centrally in request() so no tool -- including the raw
    * flarum_request escape hatch -- can bypass it.
@@ -60,6 +69,7 @@ export class FlarumClient {
   private apiKey?: string;
   private userId?: string | number;
   private timeoutMs: number;
+  private userAgent?: string;
   readonly readOnly: boolean;
   private snapshotUrl?: string;
   private snapshotToken?: string;
@@ -72,6 +82,7 @@ export class FlarumClient {
     this.apiKey = opts.apiKey;
     this.userId = opts.userId;
     this.timeoutMs = opts.timeoutMs ?? 30_000;
+    this.userAgent = opts.userAgent;
     this.readOnly = opts.readOnly ?? false;
     this.snapshotUrl = opts.snapshotUrl;
     this.snapshotToken = opts.snapshotToken;
@@ -92,6 +103,7 @@ export class FlarumClient {
       headers: {
         Authorization: `Bearer ${this.snapshotToken}`,
         "Content-Type": "application/json",
+        ...(this.userAgent ? { "User-Agent": this.userAgent } : {}),
       },
       body: "{}",
       signal: ctrl.signal,
@@ -111,6 +123,9 @@ export class FlarumClient {
       Accept: "application/vnd.api+json, application/json",
       "Content-Type": "application/json",
     };
+    if (this.userAgent) {
+      headers["User-Agent"] = this.userAgent;
+    }
     if (this.apiKey) {
       let token = `Token ${this.apiKey}`;
       if (this.userId !== undefined && this.userId !== "") {

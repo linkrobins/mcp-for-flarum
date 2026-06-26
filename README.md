@@ -37,6 +37,19 @@ It gives any MCP-compatible AI client (Claude Code, Claude Desktop, Cursor, VS C
 | `FLARUM_USER_ID` | optional | Act as this user id when using a master API key |
 | `FLARUM_MODE` | optional | `write` (default) or `read`. In `read` mode the server refuses every mutating request (create/update/delete and any non-GET `flarum_request`) and the write tools are hidden. `READ_ONLY=1` does the same. Use it to point an AI at a real forum without risking changes. |
 | `FLARUM_TIMEOUT` | optional | Request timeout in ms (default 30000) |
+| `FLARUM_USER_AGENT` | optional | Override the `User-Agent` sent to your forum. Defaults to `mcp-for-flarum/<version> (+repo url)`. See [Behind Cloudflare or a WAF](#behind-cloudflare-or-a-waf). |
+
+### Behind Cloudflare or a WAF
+
+Many Flarum forums sit behind Cloudflare. Some WAF configurations block requests whose `User-Agent` looks scripted or empty, returning **Cloudflare error 1010** (`browser_signature_banned`) before the request ever reaches Flarum. The server sends a descriptive, identifiable User-Agent by default for exactly this reason, so the common case works out of the box.
+
+If your forum still blocks it, allowlist the tool rather than loosening your firewall:
+
+- **Allowlist the User-Agent.** In Cloudflare, add a WAF rule like `User-Agent contains "mcp-for-flarum"` → *Skip* / *Allow*. The default UA is `mcp-for-flarum/<version> (+https://github.com/linkrobins/mcp-for-flarum)`.
+- **Or allowlist the server IP** (best for a hosted/single-source deployment).
+- **Or set a custom UA** with `FLARUM_USER_AGENT` to match an existing allow rule.
+
+Do not work around this by spoofing a browser User-Agent: it is fragile and makes the traffic impossible to allowlist or audit.
 
 ### Getting an API key
 

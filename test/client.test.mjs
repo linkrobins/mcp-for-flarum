@@ -81,6 +81,33 @@ test("omits auth header when no key is set", async () => {
   assert.equal(calls[0].init.headers.Authorization, undefined);
 });
 
+test("sends User-Agent header when configured", async () => {
+  stubFetch({});
+  const c = new FlarumClient({ baseUrl: "http://forum.test", userAgent: "mcp-for-flarum/test" });
+  await c.request({ path: "/" });
+  assert.equal(calls[0].init.headers["User-Agent"], "mcp-for-flarum/test");
+});
+
+test("omits User-Agent header when not configured", async () => {
+  stubFetch({});
+  const c = new FlarumClient({ baseUrl: "http://forum.test" });
+  await c.request({ path: "/" });
+  assert.equal(calls[0].init.headers["User-Agent"], undefined);
+});
+
+test("snapshot ping carries the configured User-Agent", async () => {
+  stubFetch({ data: {} });
+  const c = new FlarumClient({
+    baseUrl: "http://forum.test",
+    userAgent: "mcp-for-flarum/test",
+    snapshotUrl: "http://host.test/snap",
+    snapshotToken: "TOK",
+  });
+  await c.request({ method: "POST", path: "/discussions", body: { data: {} } });
+  const snap = calls.find((x) => x.url === "http://host.test/snap");
+  assert.equal(snap.init.headers["User-Agent"], "mcp-for-flarum/test");
+});
+
 test("GET never sends a body, even if one is passed", async () => {
   stubFetch({});
   const c = new FlarumClient({ baseUrl: "http://forum.test" });
