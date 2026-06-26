@@ -9,7 +9,12 @@ services:
       - "3000:3000"
     environment:
       MCP_TRANSPORT: http
+      # Bind all interfaces inside the container so the published port works.
+      # Allowed only because MCP_AUTH_TOKEN is set (the server fails closed otherwise).
+      HOST: 0.0.0.0
       FLARUM_URL: https://discuss.example.com
       FLARUM_API_KEY: change-me
-      # Strongly recommended: require Authorization: Bearer <this> on /mcp
+      # Required to expose a non-localhost interface. Use a long random secret.
       MCP_AUTH_TOKEN: change-me-to-a-long-random-secret
+      # Point an AI at a real forum safely: FLARUM_MODE=read blocks all writes.
+      FLARUM_MODE: write

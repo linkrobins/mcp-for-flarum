@@ -35,6 +35,7 @@ It gives any MCP-compatible AI client (Claude Code, Claude Desktop, Cursor, VS C
 | `FLARUM_URL` | yes | Your forum's base URL, e.g. `https://discuss.example.com` |
 | `FLARUM_API_KEY` | for writes / private data | A Flarum API key (from the `api_keys` table). Without it, only public read access is available. |
 | `FLARUM_USER_ID` | optional | Act as this user id when using a master API key |
+| `FLARUM_MODE` | optional | `write` (default) or `read`. In `read` mode the server refuses every mutating request (create/update/delete and any non-GET `flarum_request`) and the write tools are hidden. `READ_ONLY=1` does the same. Use it to point an AI at a real forum without risking changes. |
 | `FLARUM_TIMEOUT` | optional | Request timeout in ms (default 30000) |
 
 ### Getting an API key
@@ -126,8 +127,8 @@ Hosting-specific configuration:
 | --- | --- | --- |
 | `MCP_TRANSPORT` | `stdio` | Set to `http` to run the web service (or pass `--http`) |
 | `PORT` | `3000` | HTTP port |
-| `HOST` | `0.0.0.0` | Bind address |
-| `MCP_AUTH_TOKEN` | _(none)_ | If set, requests must send `Authorization: Bearer <token>`. **Strongly recommended when hosting** |
+| `HOST` | `127.0.0.1` | Bind address. Fails closed: it **refuses to bind a non-localhost address unless `MCP_AUTH_TOKEN` is set**. To expose it (e.g. in Docker), set `HOST=0.0.0.0` and a token. |
+| `MCP_AUTH_TOKEN` | _(none)_ | If set, requests must send `Authorization: Bearer <token>`. Required to expose a non-localhost interface. |
 
 > Security: a hosted instance can read, write, and delete on the forum its key targets. Always run it behind TLS, set `MCP_AUTH_TOKEN` (or front it with your own auth/OAuth proxy), and give the API key's user the least privilege it needs. The Flarum API key stays server-side and is never exposed to clients.
 
@@ -136,11 +137,14 @@ Hosting-specific configuration:
 ```bash
 docker run -p 3000:3000 \
   -e MCP_TRANSPORT=http \
+  -e HOST=0.0.0.0 \
   -e FLARUM_URL=https://discuss.example.com \
   -e FLARUM_API_KEY=xxxxx \
   -e MCP_AUTH_TOKEN=a-long-random-secret \
   ghcr.io/linkrobins/mcp-for-flarum
 ```
+
+`HOST=0.0.0.0` is needed so the published port is reachable; the server only allows it because `MCP_AUTH_TOKEN` is set.
 
 Or use the included [`docker-compose.yml`](docker-compose.yml): set your values and `docker compose up -d`.
 

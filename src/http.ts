@@ -44,9 +44,22 @@ function authorized(req: IncomingMessage): boolean {
   return header === `Bearer ${expected}`;
 }
 
+function isLocalHost(host: string): boolean {
+  return host === "127.0.0.1" || host === "localhost" || host === "::1";
+}
+
 export async function runHttp(): Promise<void> {
   const port = process.env.PORT ? Number(process.env.PORT) : 3000;
-  const host = process.env.HOST ?? "0.0.0.0";
+  // Fail-closed: bind to localhost by default, and refuse to expose a
+  // non-localhost interface without an auth token.
+  const host = process.env.HOST ?? "127.0.0.1";
+  if (!isLocalHost(host) && !process.env.MCP_AUTH_TOKEN) {
+    process.stderr.write(
+      `[mcp-for-flarum] Refusing to bind ${host} without MCP_AUTH_TOKEN set.\n` +
+        "Set MCP_AUTH_TOKEN (or bind HOST=127.0.0.1 for local-only use).\n",
+    );
+    process.exit(1);
+  }
   // Validate config up front so misconfig fails fast, not on first request.
   clientFromEnv();
 
@@ -104,7 +117,7 @@ export async function runHttp(): Promise<void> {
   httpServer.listen(port, host, () => {
     process.stderr.write(
       `[mcp-for-flarum] HTTP transport listening on http://${host}:${port}/mcp` +
-        `${process.env.MCP_AUTH_TOKEN ? " (bearer auth on)" : " (no auth — set MCP_AUTH_TOKEN)"}\n`,
+        `${process.env.MCP_AUTH_TOKEN ? " (bearer auth on)" : " (localhost only, no auth token set)"}\n`,
     );
   });
 }

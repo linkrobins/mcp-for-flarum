@@ -31,8 +31,41 @@ function errorResult(err: unknown) {
   };
 }
 
+/**
+ * Truncate long string attributes in a JSON:API document to protect the
+ * client's context window (and the user's token bill). A forum's post bodies
+ * can each be many KB of HTML; returning 50 of them whole is what blows up an
+ * agent. maxChars <= 0 disables trimming.
+ */
+function trimDoc(doc: unknown, maxChars: number): unknown {
+  if (maxChars <= 0 || !doc || typeof doc !== "object") return doc;
+  const trimResource = (r: unknown) => {
+    const res = r as { attributes?: Record<string, unknown> };
+    if (res && typeof res === "object" && res.attributes && typeof res.attributes === "object") {
+      for (const [k, v] of Object.entries(res.attributes)) {
+        if (typeof v === "string" && v.length > maxChars) {
+          res.attributes[k] = `${v.slice(0, maxChars)}... [truncated ${v.length - maxChars} chars]`;
+        }
+      }
+    }
+  };
+  const d = doc as { data?: unknown; included?: unknown };
+  if (Array.isArray(d.data)) d.data.forEach(trimResource);
+  else trimResource(d.data);
+  if (Array.isArray(d.included)) d.included.forEach(trimResource);
+  return doc;
+}
+
+const fieldsSchema = z
+  .record(z.string(), z.string())
+  .optional()
+  .describe(
+    'Sparse fieldsets: return only named fields per type to save tokens, ' +
+      'e.g. { discussions: "title,slug,commentCount", users: "username" }.',
+  );
+
 export function registerTools(server: McpServer, client: FlarumClient): void {
-  // ---- Generic JSON:API tools: full coverage of every resource type ----
+  // ---- Read tools: always available (even in read-only mode) ----
 
   server.registerTool(
     "flarum_list",
@@ -41,7 +74,9 @@ export function registerTools(server: McpServer, client: FlarumClient): void {
       description:
         "List or search any Flarum resource collection (discussions, posts, users, tags, " +
         "groups, notifications, flags, etc., including third-party extension resources). " +
-        "Supports JSON:API filter, include, sort and pagination. " +
+        "Supports JSON:API filter, include, sort, pagination, and sparse fieldsets. " +
+        "Long text fields are truncated by default to protect context -- raise maxFieldChars " +
+        "or use fields/flarum_get to read full content. " +
         'Example: type="discussions", filter={ q: "search terms" }, include="user,tags".',
       inputSchema: {
         type: z
@@ -55,23 +90,33 @@ export function registerTools(server: McpServer, client: FlarumClient): void {
           .string()
           .optional()
           .describe('Comma-separated relationships to include, e.g. "user,tags".'),
+        fields: fieldsSchema,
         sort: z.string().optional().describe('Sort, e.g. "-createdAt" or "commentCount".'),
-        limit: z.number().int().positive().max(50).optional().describe("Page size (page[limit])."),
+        limit: z
+          .number()
+          .int()
+          .positive()
+          .max(50)
+          .optional()
+          .default(20)
+          .describe("Page size (page[limit]), default 20, max 50."),
         offset: z.number().int().min(0).optional().describe("Page offset (page[offset])."),
+        maxFieldChars: z
+          .number()
+          .int()
+          .min(0)
+          .optional()
+          .default(800)
+          .describe("Truncate string fields longer than this. 0 disables truncation."),
       },
     },
-    async ({ type, filter, include, sort, limit, offset }) => {
+    async ({ type, filter, include, fields, sort, limit, offset, maxFieldChars }) => {
       try {
         const data = await client.request({
           path: `/${type}`,
-          query: {
-            filter,
-            include,
-            sort,
-            page: { limit, offset },
-          },
+          query: { filter, include, fields, sort, page: { limit, offset } },
         });
-        return result(data);
+        return result(trimDoc(data, maxFieldChars));
       } catch (err) {
         return errorResult(err);
       }
@@ -83,23 +128,123 @@ export function registerTools(server: McpServer, client: FlarumClient): void {
     {
       title: "Get a Flarum resource",
       description:
-        "Fetch a single Flarum resource by type and id, optionally including relationships. " +
+        "Fetch a single Flarum resource by type and id, optionally including relationships " +
+        "and narrowing fields. Returns full field values by default (no truncation). " +
         'Example: type="discussions", id="42", include="posts,user".',
       inputSchema: {
         type: z.string().describe('Resource type, e.g. "discussions", "users".'),
         id: z.string().describe("Resource id."),
         include: z.string().optional().describe("Comma-separated relationships to include."),
+        fields: fieldsSchema,
+        maxFieldChars: z
+          .number()
+          .int()
+          .min(0)
+          .optional()
+          .default(0)
+          .describe("Truncate string fields longer than this. 0 (default) disables truncation."),
       },
     },
-    async ({ type, id, include }) => {
+    async ({ type, id, include, fields, maxFieldChars }) => {
       try {
-        const data = await client.request({ path: `/${type}/${id}`, query: { include } });
+        const data = await client.request({ path: `/${type}/${id}`, query: { include, fields } });
+        return result(trimDoc(data, maxFieldChars));
+      } catch (err) {
+        return errorResult(err);
+      }
+    },
+  );
+
+  server.registerTool(
+    "flarum_search",
+    {
+      title: "Search discussions",
+      description:
+        "Full-text search across discussions using Flarum's gambit/search " +
+        '(filter[q]). Long fields are truncated by default. Example: query="upgrade postgres".',
+      inputSchema: {
+        query: z.string().describe("Search query string."),
+        include: z
+          .string()
+          .optional()
+          .default("user,tags")
+          .describe("Relationships to include."),
+        fields: fieldsSchema,
+        limit: z.number().int().positive().max(50).optional().default(20),
+        maxFieldChars: z
+          .number()
+          .int()
+          .min(0)
+          .optional()
+          .default(800)
+          .describe("Truncate string fields longer than this. 0 disables truncation."),
+      },
+    },
+    async ({ query, include, fields, limit, maxFieldChars }) => {
+      try {
+        const data = await client.request({
+          path: "/discussions",
+          query: { filter: { q: query }, include, fields, page: { limit } },
+        });
+        return result(trimDoc(data, maxFieldChars));
+      } catch (err) {
+        return errorResult(err);
+      }
+    },
+  );
+
+  server.registerTool(
+    "flarum_request",
+    {
+      title: "Raw Flarum API request",
+      description:
+        "Escape hatch: make an arbitrary request to any Flarum API endpoint, for anything not " +
+        "covered by the typed tools (custom extension routes, non-JSON:API endpoints, etc.). " +
+        "In read-only mode, non-GET methods are refused. " +
+        'Path is relative to the API root, e.g. "/discussions" or "/fof/gamification/ranks".',
+      inputSchema: {
+        method: z
+          .enum(["GET", "POST", "PATCH", "PUT", "DELETE"])
+          .default("GET")
+          .describe("HTTP method."),
+        path: z.string().describe('API path relative to /api, e.g. "/users/1".'),
+        query: z.record(z.string(), z.unknown()).optional().describe("Query parameters."),
+        body: z.unknown().optional().describe("Request body (object), sent as JSON."),
+      },
+    },
+    async ({ method, path, query, body }) => {
+      try {
+        const data = await client.request({ method, path, query, body });
         return result(data);
       } catch (err) {
         return errorResult(err);
       }
     },
   );
+
+  server.registerTool(
+    "flarum_whoami",
+    {
+      title: "Current Flarum user",
+      description:
+        "Return the forum's basic info and the user the configured API key acts as. " +
+        "Useful to verify connectivity and permissions.",
+      inputSchema: {},
+    },
+    async () => {
+      try {
+        const forum = await client.request({ path: "/", query: {} });
+        return result(forum);
+      } catch (err) {
+        return errorResult(err);
+      }
+    },
+  );
+
+  // ---- Write tools: registered only when writes are allowed ----
+  // (The client also blocks mutations centrally; not registering these keeps
+  // the read-only tool surface clean so agents don't attempt doomed calls.)
+  if (client.readOnly) return;
 
   server.registerTool(
     "flarum_create",
@@ -188,85 +333,6 @@ export function registerTools(server: McpServer, client: FlarumClient): void {
       try {
         await client.request({ method: "DELETE", path: `/${type}/${id}` });
         return result({ deleted: true, type, id });
-      } catch (err) {
-        return errorResult(err);
-      }
-    },
-  );
-
-  server.registerTool(
-    "flarum_request",
-    {
-      title: "Raw Flarum API request",
-      description:
-        "Escape hatch: make an arbitrary request to any Flarum API endpoint, for anything not " +
-        "covered by the typed tools (custom extension routes, non-JSON:API endpoints, etc.). " +
-        'Path is relative to the API root, e.g. "/discussions" or "/fof/gamification/ranks".',
-      inputSchema: {
-        method: z
-          .enum(["GET", "POST", "PATCH", "PUT", "DELETE"])
-          .default("GET")
-          .describe("HTTP method."),
-        path: z.string().describe('API path relative to /api, e.g. "/users/1".'),
-        query: z.record(z.string(), z.unknown()).optional().describe("Query parameters."),
-        body: z.unknown().optional().describe("Request body (object), sent as JSON."),
-      },
-    },
-    async ({ method, path, query, body }) => {
-      try {
-        const data = await client.request({ method, path, query, body });
-        return result(data);
-      } catch (err) {
-        return errorResult(err);
-      }
-    },
-  );
-
-  // ---- Convenience tools: ergonomic shortcuts for the common operations ----
-
-  server.registerTool(
-    "flarum_whoami",
-    {
-      title: "Current Flarum user",
-      description:
-        "Return the forum's basic info and the user the configured API key acts as. " +
-        "Useful to verify connectivity and permissions.",
-      inputSchema: {},
-    },
-    async () => {
-      try {
-        const forum = await client.request({ path: "/", query: {} });
-        return result(forum);
-      } catch (err) {
-        return errorResult(err);
-      }
-    },
-  );
-
-  server.registerTool(
-    "flarum_search",
-    {
-      title: "Search discussions",
-      description:
-        "Full-text search across discussions using Flarum's gambit/search " +
-        '(filter[q]). Example: query="upgrade postgres".',
-      inputSchema: {
-        query: z.string().describe("Search query string."),
-        include: z
-          .string()
-          .optional()
-          .default("user,tags,firstPost")
-          .describe("Relationships to include."),
-        limit: z.number().int().positive().max(50).optional().default(20),
-      },
-    },
-    async ({ query, include, limit }) => {
-      try {
-        const data = await client.request({
-          path: "/discussions",
-          query: { filter: { q: query }, include, page: { limit } },
-        });
-        return result(data);
       } catch (err) {
         return errorResult(err);
       }

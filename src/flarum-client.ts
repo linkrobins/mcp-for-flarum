@@ -17,6 +17,12 @@ export interface FlarumClientOptions {
   /** Act as this user id when using a master API key. */
   userId?: string | number;
   timeoutMs?: number;
+  /**
+   * When true, the client refuses any mutating request (POST/PUT/PATCH/DELETE).
+   * Enforced centrally in request() so no tool -- including the raw
+   * flarum_request escape hatch -- can bypass it.
+   */
+  readOnly?: boolean;
 }
 
 export interface FlarumRequestOptions {
@@ -45,6 +51,7 @@ export class FlarumClient {
   private apiKey?: string;
   private userId?: string | number;
   private timeoutMs: number;
+  readonly readOnly: boolean;
 
   constructor(opts: FlarumClientOptions) {
     // Normalise: strip trailing slash, ensure we target the /api root.
@@ -52,6 +59,7 @@ export class FlarumClient {
     this.apiKey = opts.apiKey;
     this.userId = opts.userId;
     this.timeoutMs = opts.timeoutMs ?? 30_000;
+    this.readOnly = opts.readOnly ?? false;
   }
 
   private apiRoot(): string {
@@ -97,6 +105,15 @@ export class FlarumClient {
   async request<T = unknown>(opts: FlarumRequestOptions): Promise<T> {
     const method = (opts.method ?? "GET").toUpperCase();
     const path = opts.path.startsWith("/") ? opts.path : `/${opts.path}`;
+
+    // Read-only guard: the single chokepoint every tool flows through.
+    if (this.readOnly && method !== "GET" && method !== "HEAD" && method !== "OPTIONS") {
+      throw new Error(
+        `Refusing ${method} ${path}: server is in read-only mode. ` +
+          `Set FLARUM_MODE=write (and remove READ_ONLY) to allow writes.`,
+      );
+    }
+
     const url = `${this.apiRoot()}${path}${this.buildQuery(opts.query)}`;
 
     const controller = new AbortController();
