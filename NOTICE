@@ -1,0 +1,21 @@
+NOTICE — MCP for Flarum
+
+Copyright (c) 2026 Link Robins (https://linkrobins.com). All rights reserved.
+
+This software is source-available, NOT open source. It is published so that
+people may self-host and run it for their own forums under the terms in LICENSE.
+
+No third party may host, deploy, run, or otherwise provide this software, or any
+of its features or functionality, to or for others as a hosted or managed
+service, sandbox, gateway, or runtime, whether for a fee or free of charge
+(LICENSE sections 2(b) and 4). Link Robins is the sole entity permitted to offer
+it as a hosted or managed service.
+
+This explicitly includes MCP directories, registries, and aggregators (for
+example, but not limited to, Glama, Smithery, and similar platforms). Such
+platforms may link to this repository, but may NOT build-and-run, "install",
+deploy, or expose a hosted/remote instance of this server to their users.
+Indexing and linking are permitted; hosting and running are not.
+
+To request a hosted version, or for licensing or partnership inquiries, contact
+Link Robins at https://linkrobins.com.

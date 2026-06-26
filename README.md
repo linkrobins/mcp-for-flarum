@@ -221,6 +221,8 @@ FLARUM_URL=... FLARUM_API_KEY=... node dist/index.js
 
 Source-available and proprietary. Copyright (c) 2026 Link Robins. You may self-host and run it for your own use; you may not redistribute it or provide it to others as a hosted service. Link Robins is the only entity permitted to offer it as a hosted service. See [LICENSE](LICENSE) for the full terms.
 
+> **No third-party hosting.** MCP directories, registries, and aggregators (for example Glama, Smithery, and similar platforms) may index and link to this repository, but may not build-and-run, "install", deploy, sandbox, or otherwise expose a hosted or remote instance of this server to their users. Hosting and running it as a service for third parties is reserved to Link Robins (LICENSE sections 2(b) and 4). See [NOTICE](NOTICE).
+
 ## Trademarks
 
 Flarum is a trademark of the Flarum Foundation. This is an independent project that works *with* Flarum via its API; it is not affiliated with, endorsed by, or sponsored by the Flarum Foundation.
