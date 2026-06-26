@@ -56,7 +56,7 @@ export async function runHttp(): Promise<void> {
     // Lightweight health check for load balancers / uptime monitors.
     if (req.method === "GET" && url.pathname === "/health") {
       res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ status: "ok", name: "flarum-mcp" }));
+      res.end(JSON.stringify({ status: "ok", name: "mcp-for-flarum" }));
       return;
     }
 
@@ -93,7 +93,7 @@ export async function runHttp(): Promise<void> {
       const body = await readBody(req);
       await transport.handleRequest(req, res, body);
     } catch (err) {
-      process.stderr.write(`[flarum-mcp] http request error: ${(err as Error).stack ?? err}\n`);
+      process.stderr.write(`[mcp-for-flarum] http request error: ${(err as Error).stack ?? err}\n`);
       if (!res.headersSent) {
         res.writeHead(500, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ jsonrpc: "2.0", error: { code: -32603, message: "Internal server error" }, id: null }));
@@ -103,7 +103,7 @@ export async function runHttp(): Promise<void> {
 
   httpServer.listen(port, host, () => {
     process.stderr.write(
-      `[flarum-mcp] HTTP transport listening on http://${host}:${port}/mcp` +
+      `[mcp-for-flarum] HTTP transport listening on http://${host}:${port}/mcp` +
         `${process.env.MCP_AUTH_TOKEN ? " (bearer auth on)" : " (no auth — set MCP_AUTH_TOKEN)"}\n`,
     );
   });

@@ -12,7 +12,7 @@ async function runStdio(): Promise<void> {
   const server = createMcpServer(client);
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  process.stderr.write(`[flarum-mcp] connected to ${process.env.FLARUM_URL} (stdio)\n`);
+  process.stderr.write(`[mcp-for-flarum] connected to ${process.env.FLARUM_URL} (stdio)\n`);
 }
 
 async function main(): Promise<void> {
@@ -24,6 +24,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((err) => {
-  process.stderr.write(`[flarum-mcp] fatal: ${err?.stack ?? err}\n`);
+  process.stderr.write(`[mcp-for-flarum] fatal: ${err?.stack ?? err}\n`);
   process.exit(1);
 });

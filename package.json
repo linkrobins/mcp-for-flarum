@@ -1,5 +1,5 @@
 {
-  "name": "flarum-mcp",
+  "name": "mcp-for-flarum",
   "version": "0.1.0",
   "description": "Model Context Protocol server for Flarum. Gives AI agents full access to any Flarum forum's API: discussions, posts, users, tags, groups, moderation, settings, and third-party extension endpoints.",
   "keywords": [
@@ -10,15 +10,15 @@
     "claude",
     "forum"
   ],
-  "license": "MIT",
+  "license": "SEE LICENSE IN LICENSE",
   "author": "linkrobins",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/linkrobins/flarum-mcp.git"
+    "url": "git+https://github.com/linkrobins/mcp-for-flarum.git"
   },
   "type": "module",
   "bin": {
-    "flarum-mcp": "dist/index.js"
+    "mcp-for-flarum": "dist/index.js"
   },
   "files": [
     "dist",

@@ -1,21 +1,62 @@
-MIT License
+MCP for Flarum License
 
-Copyright (c) 2026 linkrobins
+Copyright (c) 2026 Link Robins (https://linkrobins.com). All rights reserved.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+This software is source-available, NOT open source. By accessing, copying,
+installing, or using the software, you agree to these terms. If you do not
+agree, you may not access or use the software.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+1. LIMITED LICENSE
+   Link Robins grants you a personal, limited, non-exclusive,
+   non-transferable, non-sublicensable, and revocable license to install and
+   run the software on infrastructure you control, solely to operate forum(s)
+   that you own or operate for your own use ("Permitted Use").
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+2. RESTRICTIONS
+   You may NOT:
+   (a) redistribute, publish, share, post, sell, lend, sublicense, or
+       otherwise make available the software or any part of it -- including
+       its source code, binaries, modified versions, or any derivative work --
+       to any third party, by any means;
+   (b) host, deploy, operate, or otherwise provide the software, or any of its
+       features or functionality, to or for any third party, whether as a
+       hosted or managed service, software-as-a-service, API, or otherwise,
+       and whether for a fee or free of charge;
+   (c) use the software to build or offer a competing product or service;
+   (d) remove, alter, or obscure any copyright, trademark, license, or other
+       proprietary notice.
+
+3. MODIFICATIONS
+   You may modify the software only as necessary for your own Permitted Use.
+   Any modified copy remains fully subject to Section 2 and must never be
+   distributed or provided to any third party.
+
+4. RESERVED RIGHTS
+   Link Robins reserves all rights not expressly granted. Without limiting the
+   foregoing, Link Robins is the sole entity permitted to provide the
+   software, or its features or functionality, to customers or any other third
+   party as a hosted or managed service.
+
+5. OWNERSHIP
+   The software is licensed, not sold. Link Robins retains all right, title,
+   and interest in and to the software, including all intellectual property
+   rights. This license transfers no ownership to you.
+
+6. TERMINATION
+   This license terminates automatically and immediately if you breach any of
+   its terms. Upon termination you must cease all use of the software and
+   delete all copies in your possession or control.
+
+7. NO WARRANTY
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT.
+
+8. LIMITATION OF LIABILITY
+   IN NO EVENT SHALL LINK ROBINS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER
+   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING
+   FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+   DEALINGS IN THE SOFTWARE.
+
+For commercial hosting, partnership, or licensing inquiries, contact
+Link Robins at https://linkrobins.com.

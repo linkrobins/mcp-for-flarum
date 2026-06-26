@@ -9,7 +9,7 @@ export function clientFromEnv(): FlarumClient {
   const baseUrl = process.env.FLARUM_URL;
   if (!baseUrl) {
     process.stderr.write(
-      "[flarum-mcp] Missing required environment variable FLARUM_URL.\n" +
+      "[mcp-for-flarum] Missing required environment variable FLARUM_URL.\n" +
         "Set FLARUM_URL (your forum's base URL) and FLARUM_API_KEY (a Flarum API key).\n",
     );
     process.exit(1);
@@ -24,7 +24,7 @@ export function clientFromEnv(): FlarumClient {
 
 /** Build a fully-wired MCP server for a given Flarum client. */
 export function createMcpServer(client: FlarumClient): McpServer {
-  const server = new McpServer({ name: "flarum-mcp", version: VERSION });
+  const server = new McpServer({ name: "mcp-for-flarum", version: VERSION });
   registerTools(server, client);
   return server;
 }

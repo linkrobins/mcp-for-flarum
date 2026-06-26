@@ -1,4 +1,4 @@
-# Flarum MCP
+# MCP for Flarum
 
 A [Model Context Protocol](https://modelcontextprotocol.io) server for [Flarum](https://flarum.org).
 
@@ -53,13 +53,13 @@ Use the resulting `key` as `FLARUM_API_KEY`. Setting `user_id` (or `FLARUM_USER_
 Run directly with `npx` (no install):
 
 ```bash
-FLARUM_URL=https://discuss.example.com FLARUM_API_KEY=xxxxx npx -y flarum-mcp
+FLARUM_URL=https://discuss.example.com FLARUM_API_KEY=xxxxx npx -y mcp-for-flarum
 ```
 
 ### Claude Code
 
 ```bash
-claude mcp add flarum -- env FLARUM_URL=https://discuss.example.com FLARUM_API_KEY=xxxxx npx -y flarum-mcp
+claude mcp add flarum -- env FLARUM_URL=https://discuss.example.com FLARUM_API_KEY=xxxxx npx -y mcp-for-flarum
 ```
 
 ### Claude Desktop / Cursor / Windsurf (JSON config)
@@ -69,7 +69,7 @@ claude mcp add flarum -- env FLARUM_URL=https://discuss.example.com FLARUM_API_K
   "mcpServers": {
     "flarum": {
       "command": "npx",
-      "args": ["-y", "flarum-mcp"],
+      "args": ["-y", "mcp-for-flarum"],
       "env": {
         "FLARUM_URL": "https://discuss.example.com",
         "FLARUM_API_KEY": "xxxxx"
@@ -112,12 +112,12 @@ Hosting-specific configuration:
 ### Docker
 
 ```bash
-docker build -t flarum-mcp .
+docker build -t mcp-for-flarum .
 docker run -p 3000:3000 \
   -e FLARUM_URL=https://discuss.example.com \
   -e FLARUM_API_KEY=xxxxx \
   -e MCP_AUTH_TOKEN=a-long-random-secret \
-  flarum-mcp
+  mcp-for-flarum
 ```
 
 ## Development
@@ -130,4 +130,8 @@ FLARUM_URL=... FLARUM_API_KEY=... node dist/index.js
 
 ## License
 
-MIT
+Source-available and proprietary. Copyright (c) 2026 Link Robins. You may self-host and run it for your own use; you may not redistribute it or provide it to others as a hosted service. Link Robins is the only entity permitted to offer it as a hosted service. See [LICENSE](LICENSE) for the full terms.
+
+## Trademarks
+
+Flarum is a trademark of the Flarum Foundation. This is an independent project that works *with* Flarum via its API; it is not affiliated with, endorsed by, or sponsored by the Flarum Foundation.
