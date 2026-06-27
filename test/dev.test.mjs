@@ -49,3 +49,17 @@ test("'all' is accepted and yields the full reference", async () => {
   const res = await call(t.get("flarum_dev"), { topic: "all" });
   assert.match(textOf(res), /## Releasing/);
 });
+
+test("the scaling and integrations topics are selectable and on-topic", async () => {
+  const t = register();
+  const scaling = textOf(await call(t.get("flarum_dev"), { topic: "scaling" }));
+  assert.match(scaling, /Scaling: queues/);
+  for (const k of ["sync", "AbstractJob", "Horizon", "Extend\\Filesystem"]) {
+    assert.ok(scaling.includes(k), `scaling should cover ${k}`);
+  }
+  const integrations = textOf(await call(t.get("flarum_dev"), { topic: "integrations" }));
+  assert.match(integrations, /Optional ecosystem integrations/);
+  for (const k of ["flarum-realtime", "flarum-audit", "fof-forum-widgets-core", "fof-sitemap"]) {
+    assert.ok(integrations.includes(k), `integrations should cover ${k}`);
+  }
+});

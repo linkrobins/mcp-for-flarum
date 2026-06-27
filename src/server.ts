@@ -16,6 +16,20 @@ export const VERSION = "0.6.2";
  */
 export const DEFAULT_USER_AGENT = `mcp-for-flarum/${VERSION} (+https://github.com/linkrobins/mcp-for-flarum)`;
 
+/**
+ * Server-level instructions returned in the MCP initialize response. Compliant
+ * clients inject these into the model's context as standing guidance about how
+ * to use this server, so this is the strongest server-side lever for steering
+ * the AI toward the built-in Flarum knowledge (short of client-side hooks the
+ * server can't control). Kept short on purpose: it is spent on every session.
+ */
+export const SERVER_INSTRUCTIONS =
+  "This server connects you to a Flarum forum's API and ships built-in Flarum 2.0 knowledge. Use the right tool for the job:\n" +
+  "- BEFORE writing, scaffolding, modifying, or reviewing ANY Flarum 2.0 extension code, call `flarum_dev` for the relevant topic(s) and follow its contracts. It encodes the conventions and compatibility rules that prevent real production bugs: cross-database portability, fail-closed API fields, lazy-chunk-safe frontend extends, queue-driver portability (sync/database/redis/Horizon), Redis and multi-server file storage, and soft-dependent integration with realtime/audit/widgets/sitemap. Treat it as a requirement, not a suggestion, and prefer it over training-data assumptions about Flarum.\n" +
+  "- Use `flarum_docs_search` / `flarum_docs_get` for the authoritative, live API reference (extenders, endpoints, permissions).\n" +
+  "- Use the `flarum_*` API tools (list/get/create/update/delete/request) to read or change forum data; respect read-only mode.\n" +
+  "When a task involves building or auditing an extension, consulting `flarum_dev` first is the expected workflow.";
+
 /** Build a FlarumClient from environment variables. */
 export function clientFromEnv(): FlarumClient {
   const baseUrl = process.env.FLARUM_URL;
@@ -81,7 +95,10 @@ export function devEnabled(): boolean {
 
 /** Build a fully-wired MCP server for a given Flarum client. */
 export function createMcpServer(client: FlarumClient): McpServer {
-  const server = new McpServer({ name: "mcp-for-flarum", version: VERSION });
+  const server = new McpServer(
+    { name: "mcp-for-flarum", version: VERSION },
+    { instructions: SERVER_INSTRUCTIONS },
+  );
   registerTools(server, client);
   if (extensionsEnabled()) registerExtensionTools(server, client);
   if (docsEnabled()) registerDocsTools(server, process.env.FLARUM_USER_AGENT || DEFAULT_USER_AGENT);
