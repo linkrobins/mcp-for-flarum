@@ -32,7 +32,8 @@ const SECTIONS: Record<string, { title: string; body: string }> = {
 - **Three layers**: backend (OO PHP + Laravel components, dependency injection), the JSON:API public API, and the Mithril.js frontend SPA. A feature often touches all three (DB structure → API field → frontend display).
 - **Standard layout**: \`extend.php\` (the extender list), \`src/\` (PHP, PSR-4), \`js/src/\` (TS/ESM source) with \`js/dist/\` committed, \`less/\`, \`locale/en.yml\`, \`migrations/\`, \`tests/\`, \`.github/workflows/\`, \`phpstan.neon\`, \`composer.json\`, \`README.md\`, \`LICENSE\`.
 - **Use \`flarum-cli\`** to scaffold and to add/maintain infra: \`flarum-cli init\`, then \`flarum-cli infra backendTesting | frontendTesting | phpstan | githubActions\`. It keeps you aligned with the current conventions; record what it manages in \`extra.flarum-cli.modules\`.
-- **Drop the \`autoload\` block entirely** for a JS-only extension (no \`src/\` PHP) instead of leaving a PSR-4 mapping pointing at a non-existent directory.`,
+- **Drop the \`autoload\` block entirely** for a JS-only extension (no \`src/\` PHP) instead of leaving a PSR-4 mapping pointing at a non-existent directory.
+- **Community-health files** for anything published: \`.github/ISSUE_TEMPLATE\`, \`PULL_REQUEST_TEMPLATE.md\`, \`SECURITY.md\`, \`FUNDING.yml\`. If you maintain several extensions, a shared \`<org>/.github\` repo lets them all inherit one set instead of copying per-repo. Credit the upstream in the README when porting a 1.x extension.`,
   },
   composer: {
     title: "composer.json",
@@ -54,12 +55,15 @@ const SECTIONS: Record<string, { title: string; body: string }> = {
 - **Resolve translations at render time**, never at module load (a top-level \`app.translator.trans(...)\` freezes to the English fallback).
 - **Integrating with another extension's component** (e.g. FoF widgets): resolve its base classes at initializer time via the registry (\`flarum.reg.get('ext-id', ...)\`), not a top-level \`ext:\` import, to avoid load-order crashes.
 - **Sanitize before \`m.trust()\`**: run any user/admin-supplied HTML through DOMPurify; prefer \`textContent\` over \`innerHTML\`; scope theme CSS classes so states don't bleed; make aria-labels translatable.
-- **Prefer render-driven processing** (component \`oncreate\`/\`onupdate\`) over \`setInterval\` DOM polling.`,
+- **Prefer render-driven processing** (component \`oncreate\`/\`onupdate\`) over \`setInterval\` DOM polling.
+- **\`autoExportLoader\` mangles exported names that contain digits** (a top-level \`export const pad2 = …\` can be re-exported as \`twoDigits\`/something unexpected). A single bad export doesn't just break your bundle — it can break *other* extensions' bundles loaded after yours. Avoid digits in exported identifier names, and verify the built bundle actually exports what you expect.
+- **Non-discussion notifications group under the forum title** ("Flarum") by default. If your extension emits notifications that aren't about a discussion, override \`NotificationList\` content to relabel them per-extension, or they'll all bucket together confusingly.`,
   },
   backend: {
     title: "Backend (API resources, models, migrations)",
     body: `- **Fail-closed serializer/resource fields**: any per-request boolean shipped on a broadly-fetched resource (e.g. \`ForumResource\` fields on every forum response) should wrap \`can()\`/attribute reads in try/catch and degrade to \`false\` — a throwing field must not 500 the whole boot payload. Don't \`resolve()\` services inside a field closure; inject via the resource constructor.
 - **No side effects on GET / serialization**: never do a write while serializing a read. Move state-changing work to an explicit POST route.
+- **Gate every endpoint explicitly**: \`assertCan\`/\`assertRegistered\`/\`assertAdmin\` in endpoint authorization, and define abilities via \`Access\\Policy\` rather than ad-hoc checks. On a private forum, scope list/index queries behind the \`viewForum\` permission so a guest can't enumerate rows. Default to deny; make a new capability opt-in via a seeded permission, not implicitly available.
 - **Atomic multi-row creation**: when creating a parent + its first child (ticket+first reply, discussion+first post), do it in one transaction (and take a row lock if a rate/quota check must be TOCTOU-safe) so a failure can't leave an orphan.
 - **Models**: add \`@property\`/\`@property-read\` PHPDoc for columns and relationships (PHPStan needs it, and it documents the schema); use \`$casts\` (not the deprecated \`$dates\`); type relationship methods.
 - **Migrations** portable + idempotent: \`createTableIfNotExists\`/\`addColumns\`; wrap FK drops in try/catch instead of probing \`information_schema\` (which doesn't exist on SQLite/Postgres); chunk backfills; race-safe unique indexes; seed permissions via migration.
@@ -80,6 +84,7 @@ const SECTIONS: Record<string, { title: string; body: string }> = {
     body: `- Use \`flarum/testing: ^2.0\` (PHPUnit 12). Layout: \`tests/{unit,integration,fixtures}\`, \`tests/integration/setup.php\`, and \`phpunit.unit.xml\` (\`processIsolation="false"\`) + \`phpunit.integration.xml\` (\`processIsolation="true"\`). Keep \`backupGlobals\`/\`backupStaticProperties\` as the docs show. Use PHP 8 attributes (\`#[Test]\`), not docblock annotations.
 - **Integration tests are the highest-value coverage**: hit your API endpoints through the middleware stack as different actors (guest / member / staff / admin) to lock in permissions, visibility scoping, create/update/delete, and error codes. They are the automated form of "I tested it on the forum".
 - In \`TestCase\`, do all setup — \`extension()\`, \`extend()\`, \`prepareDatabase()\`, \`setting()\` — **before** the app boots (the first \`app()\`/\`send()\`/\`database()\` call boots it; later setup is silently ignored).
+- Seed rows in \`prepareDatabase()\` keyed by model class (the harness uses factories), and get ready-made actors from the \`RetrievesAuthorizedUsers\` trait (\`normalUser()\`, admin id 1) so a permissions test is a few lines. Use \`ConsoleTestCase\` for \`Extend\\Console\` commands.
 - **Unit tests** for pure logic (validators, permission helpers) via Mockery — mock only the few interactions under test. Needing lots of mocks is a smell to extract smaller functions.
 - Frontend logic: Jest via \`@flarum/jest-config\` where it earns its keep.
 - **Testing-environment notes**: the test harness defaults to SQLite; point it at MySQL/MariaDB with \`DB_DRIVER\`/\`DB_*\` env vars + \`composer test:setup\` if that matches production. An unauthenticated POST is rejected by Flarum's CSRF guard (HTTP 400) before the auth gate (401) — for "a guest can't write" assert rejection + that nothing was persisted, not a specific status code.
@@ -95,7 +100,8 @@ const SECTIONS: Record<string, { title: string; body: string }> = {
   },
   release: {
     title: "Releasing",
-    body: `- A README with a clear description and a LICENSE. Tag releases with SemVer (\`git tag vX.Y.Z\` && \`git push --tags\`); submit once to Packagist, then enable auto-update so future releases are just commit/tag/push.
+    body: `- A README with a clear description and a LICENSE (MIT or similar for a public extension; \`proprietary\` for a private/site-specific one). Tag releases with SemVer (\`git tag vX.Y.Z\` && \`git push --tags\`); submit once to Packagist, then enable auto-update so future releases are just commit/tag/push.
+- **The tag is the release** — Packagist publishes from the git tag, so a commit merely *titled* "Release vX.Y.Z" with no actual tag ships nothing. Cut (and push) the real tag, and a GitHub Release if you announce there. A version bump isn't done until the tag exists on the remote.
 - **Write release notes for the people who install the extension** (forum admins), not for developers: describe what the user experiences, in plain language. The release/tag body can serve as the changelog.
 - Commit messages: imperative subject; body that explains the root cause, the fix, and how you verified it. Keep them honest about what was and wasn't tested.`,
   },
