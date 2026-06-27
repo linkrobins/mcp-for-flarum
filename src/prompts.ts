@@ -94,11 +94,43 @@ export function registerExtensionPrompts(server: McpServer): void {
       userMessage(
         `Audit the Flarum 2.0 extension ${target ? `at ${target}` : "in the current working directory"} for production-stack and ecosystem compatibility.\n\n` +
           "Call `flarum_dev` topics `scaling` and `integrations`, then verify the code honors every contract and report each violation with `file:line` and the corrected pattern:\n" +
-          "- Queue-driver portability: every job is correct under the `sync` default (runs inline), `database`, and `redis`/Horizon — pass IDs not models and re-fetch, idempotent and retry-safe handlers, no request-scoped state, sensible `tries`/`timeout`/`backoff`.\n" +
+          "- Queue-driver portability: every job is correct under the `sync` default (runs inline), `database`, and `redis`/Horizon: pass IDs not models and re-fetch, idempotent and retry-safe handlers, no request-scoped state, sensible `tries`/`timeout`/`backoff`.\n" +
           "- Redis / cache: shared across nodes and non-authoritative (recompute on miss), namespaced keys; never the filesystem or static memory for shared state.\n" +
           "- Multi-server file storage: no local-path assumptions; a declared `Extend\\Filesystem` disk an admin can repoint at S3; public URLs via the disk.\n" +
           "- Optional integrations: soft-dependence (suggest, never require; `Conditional`/`whenExtensionEnabled` and `flarum.reg.get`), and the feature works with AND without flarum/realtime, flarum/audit, fof/forum-widgets-core, and fof/sitemap.\n" +
           "Confirm it also works on a stock single-box forum with no Redis, no worker, and no optional extensions installed.",
+      ),
+  );
+}
+
+/** Register the admin/non-developer support prompt. Pairs with `flarum_troubleshoot`. */
+export function registerTroubleshootPrompts(server: McpServer): void {
+  server.registerPrompt(
+    "prepare-flarum-support-request",
+    {
+      title: "Prepare a Flarum support request",
+      description:
+        "Help a non-developer turn a broken or misbehaving Flarum forum into a clean, redacted support " +
+        "request: auto-collect what the forum's API exposes, guide them through the rest, and tell them " +
+        "where to post it.",
+      argsSchema: {
+        problem: z
+          .string()
+          .optional()
+          .describe("What is going wrong, in the user's own words (optional)."),
+      },
+    },
+    ({ problem }) =>
+      userMessage(
+        "A non-developer needs help with their Flarum forum and wants to prepare a support request. " +
+          (problem ? `They describe the problem as: ${problem}\n\n` : "\n") +
+          "Do this for them, in simple language, assuming no coding experience:\n" +
+          "1. Call `flarum_troubleshoot` (topics `first-aid`, then `report`) and follow that guidance. If the problem sounds like a quick fix, suggest the relevant first-aid step before anything else.\n" +
+          "2. Auto-collect everything the forum's API exposes using the `flarum_*` read tools, so you don't make the user run commands for anything you can read yourself. Start with `flarum_whoami` for the forum and its version, and gather the installed/enabled extensions and the mail/queue drivers where the API allows.\n" +
+          "3. For details the API can't give you (PHP version, the exact `php flarum info`, server logs), use `flarum_troubleshoot` topics `info` and `logs` to hand the user the exact, copy-pasteable steps for THEIR hosting, then ask them to paste the results back.\n" +
+          "4. If there is an error, get the exact text (debug mode / log file / browser console, per the `logs` topic).\n" +
+          "5. Assemble one clean support request following the `report` checklist, and REDACT secrets (database password, API keys, tokens) before showing it to them.\n" +
+          "6. Tell them exactly where to post it: discuss.flarum.org for general problems, or the specific extension's own issue tracker if it's a single extension at fault.",
       ),
   );
 }

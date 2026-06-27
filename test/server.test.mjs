@@ -12,20 +12,34 @@ import { FlarumClient } from "../dist/flarum-client.js";
 // refactor can't silently weaken it.
 
 test("buildInstructions always covers the core forum-data tools", () => {
-  const none = buildInstructions({ docs: false, dev: false, extensions: false, diagnostics: false });
+  const none = buildInstructions({
+    docs: false,
+    dev: false,
+    troubleshoot: false,
+    extensions: false,
+    diagnostics: false,
+  });
   assert.ok(none.includes("flarum_whoami"), "must mention whoami");
   assert.ok(none.includes("read-only mode"), "must mention the read-only guard");
   // No capability lines when everything is off.
-  for (const k of ["flarum_dev", "flarum_docs", "flarum_ext_", "flarum_triage"]) {
+  for (const k of ["flarum_dev", "flarum_docs", "flarum_troubleshoot", "flarum_ext_", "flarum_triage"]) {
     assert.ok(!none.includes(k), `should not mention ${k} when disabled`);
   }
 });
 
 test("buildInstructions adds a directive for each enabled capability", () => {
-  const all = buildInstructions({ docs: true, dev: true, extensions: true, diagnostics: true });
+  const all = buildInstructions({
+    docs: true,
+    dev: true,
+    troubleshoot: true,
+    extensions: true,
+    diagnostics: true,
+  });
   assert.ok(all.includes("flarum_dev"), "dev directive");
   assert.ok(all.includes("build-flarum-extension"), "points at the prompts");
   assert.ok(all.includes("flarum_docs"), "docs directive");
+  assert.ok(all.includes("flarum_troubleshoot"), "troubleshoot directive");
+  assert.ok(all.includes("prepare-flarum-support-request"), "points at the support prompt");
   assert.ok(all.includes("flarum_ext_why_not"), "extensions directive");
   assert.ok(all.includes("flarum_triage"), "diagnostics directive");
 });
@@ -39,10 +53,15 @@ test("createMcpServer advertises the instructions over a real connection", async
   const instructions = client.getInstructions();
   assert.ok(instructions && instructions.includes("flarum_dev"), "default build steers to flarum_dev");
 
-  // The workflow prompts ship alongside the dev reference (on by default).
+  // The workflow prompts ship alongside the reference tools (on by default).
   const { prompts } = await client.listPrompts();
   const names = prompts.map((p) => p.name).sort();
-  assert.deepEqual(names, ["build-flarum-extension", "check-flarum-compatibility", "review-flarum-extension"]);
+  assert.deepEqual(names, [
+    "build-flarum-extension",
+    "check-flarum-compatibility",
+    "prepare-flarum-support-request",
+    "review-flarum-extension",
+  ]);
 
   // A prompt expands into an actionable, on-topic message.
   const built = await client.getPrompt({ name: "build-flarum-extension", arguments: { summary: "a polls feature" } });

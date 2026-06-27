@@ -4,8 +4,9 @@ import { registerTools } from "./tools/index.js";
 import { registerExtensionTools } from "./tools/extensions.js";
 import { registerDocsTools } from "./tools/docs.js";
 import { registerDevTools } from "./tools/dev.js";
+import { registerTroubleshootTool } from "./tools/troubleshoot.js";
 import { diagClientFromEnv, registerDiagnosticTools } from "./tools/diagnostics.js";
-import { registerExtensionPrompts } from "./prompts.js";
+import { registerExtensionPrompts, registerTroubleshootPrompts } from "./prompts.js";
 
 export const VERSION = "0.6.2";
 
@@ -28,6 +29,7 @@ export const DEFAULT_USER_AGENT = `mcp-for-flarum/${VERSION} (+https://github.co
 export function buildInstructions(caps: {
   docs: boolean;
   dev: boolean;
+  troubleshoot: boolean;
   extensions: boolean;
   diagnostics: boolean;
 }): string {
@@ -44,6 +46,11 @@ export function buildInstructions(caps: {
   if (caps.docs) {
     lines.push(
       "- **How Flarum itself works**: use `flarum_docs_search`/`flarum_docs_get`/`flarum_docs_list` for the authoritative, live 2.0 documentation (extenders, endpoints, permissions, settings) instead of recalling it from memory.",
+    );
+  }
+  if (caps.troubleshoot) {
+    lines.push(
+      "- **A broken or misbehaving forum / helping a non-developer get support**: use `flarum_troubleshoot` for plain-language guidance (safe first-aid fixes, how to run `php flarum info` and find logs on their hosting, what common errors mean, and how to write a redacted support request and where to post it), and the `prepare-flarum-support-request` prompt to assemble that report from a forum that still loads. This is self-service and needs no server access.",
     );
   }
   if (caps.extensions) {
@@ -127,18 +134,38 @@ export function devEnabled(): boolean {
   return !/^(0|false|no|off)$/i.test(process.env.FLARUM_DEV ?? "");
 }
 
+/**
+ * Whether the troubleshooting/support-request guide (flarum_troubleshoot, and
+ * the prepare-flarum-support-request prompt) is enabled. On by default: it
+ * serves static, curated guidance for forum admins and never touches the
+ * configured forum or its API key, so it's safe in any mode (including
+ * read-only and with no API key). Opt out with FLARUM_TROUBLESHOOT=0/false/off.
+ */
+export function troubleshootEnabled(): boolean {
+  return !/^(0|false|no|off)$/i.test(process.env.FLARUM_TROUBLESHOOT ?? "");
+}
+
 /** Build a fully-wired MCP server for a given Flarum client. */
 export function createMcpServer(client: FlarumClient): McpServer {
   // Resolve enabled capabilities up front so the instructions describe exactly
   // the tools that get registered below.
   const docs = docsEnabled();
   const dev = devEnabled();
+  const troubleshoot = troubleshootEnabled();
   const extensions = extensionsEnabled();
   const diag = diagClientFromEnv();
 
   const server = new McpServer(
     { name: "mcp-for-flarum", version: VERSION },
-    { instructions: buildInstructions({ docs, dev, extensions, diagnostics: diag !== null }) },
+    {
+      instructions: buildInstructions({
+        docs,
+        dev,
+        troubleshoot,
+        extensions,
+        diagnostics: diag !== null,
+      }),
+    },
   );
   registerTools(server, client);
   if (extensions) registerExtensionTools(server, client);
@@ -147,6 +174,10 @@ export function createMcpServer(client: FlarumClient): McpServer {
     registerDevTools(server);
     // Prompts orchestrate the flarum_dev workflow, so they ride with it.
     registerExtensionPrompts(server);
+  }
+  if (troubleshoot) {
+    registerTroubleshootTool(server);
+    registerTroubleshootPrompts(server);
   }
   // Managed-only: registers just when srvup injected DIAG_URL (hosting stacks).
   if (diag) registerDiagnosticTools(server, diag);
