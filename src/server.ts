@@ -3,9 +3,10 @@ import { FlarumClient } from "./flarum-client.js";
 import { registerTools } from "./tools/index.js";
 import { registerExtensionTools } from "./tools/extensions.js";
 import { registerDocsTools } from "./tools/docs.js";
+import { registerDevTools } from "./tools/dev.js";
 import { diagClientFromEnv, registerDiagnosticTools } from "./tools/diagnostics.js";
 
-export const VERSION = "0.5.3";
+export const VERSION = "0.6.0";
 
 /**
  * Default outbound User-Agent. Explicit and identifiable so that forums behind a
@@ -68,12 +69,23 @@ export function docsEnabled(): boolean {
   return !/^(0|false|no|off)$/i.test(process.env.FLARUM_DOCS ?? "");
 }
 
+/**
+ * Whether the extension-development reference tool (flarum_dev) is enabled. On
+ * by default: it serves static, curated development guidance and never touches
+ * the configured forum or its API key, so it's safe in any mode (including
+ * read-only and with no API key). Opt out with FLARUM_DEV=0/false/off.
+ */
+export function devEnabled(): boolean {
+  return !/^(0|false|no|off)$/i.test(process.env.FLARUM_DEV ?? "");
+}
+
 /** Build a fully-wired MCP server for a given Flarum client. */
 export function createMcpServer(client: FlarumClient): McpServer {
   const server = new McpServer({ name: "mcp-for-flarum", version: VERSION });
   registerTools(server, client);
   if (extensionsEnabled()) registerExtensionTools(server, client);
   if (docsEnabled()) registerDocsTools(server, process.env.FLARUM_USER_AGENT || DEFAULT_USER_AGENT);
+  if (devEnabled()) registerDevTools(server);
   // Managed-only: registers just when srvup injected DIAG_URL (hosting stacks).
   const diag = diagClientFromEnv();
   if (diag) registerDiagnosticTools(server, diag);

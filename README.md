@@ -38,6 +38,14 @@ Search and read Flarum's official [2.0 documentation](https://docs.flarum.org/2.
 | `flarum_docs_get` | Read a full docs page as Markdown (by slug, path, or URL) |
 | `flarum_docs_list` | List/browse the available 2.0 docs pages |
 
+**Extension development (on by default):**
+
+A development reference for building or reviewing a Flarum 2.0 extension: scaffolding and architecture, `composer.json`, the TypeScript frontend, backend (API resources/models/migrations), i18n, testing, static analysis & CI, and releasing. Combines the conventions the official docs establish, the de-facto FriendsOfFlarum standard, and patterns that prevent real production bugs. Static content, so it works in any mode, including read-only and with no API key. Turn it off with `FLARUM_DEV=0`.
+
+| Tool | What it does |
+| --- | --- |
+| `flarum_dev` | Returns the extension-development reference; optional `topic` (scaffold, composer, frontend, backend, i18n, testing, quality-ci, release) to narrow it |
+
 **Extension management (opt-in, off by default):**
 
 Registered only when `FLARUM_EXTENSIONS=1` and the forum has the official [`flarum/extension-manager`](https://github.com/flarum/extension-manager) installed. These drive Composer on the server, so they need an admin key and write mode. See [Managing extensions](#managing-extensions).
@@ -65,6 +73,7 @@ Registered only when `FLARUM_EXTENSIONS=1` and the forum has the official [`flar
 | `FLARUM_MODE` | optional | `write` (default) or `read`. In `read` mode the server refuses every mutating request (create/update/delete and any non-GET `flarum_request`) and the write tools are hidden. `READ_ONLY=1` does the same. Use it to point an AI at a real forum without risking changes. |
 | `FLARUM_EXTENSIONS` | optional | `1`/`true` registers the extension-management tools (install/update/remove extensions via `flarum/extension-manager`). Off by default; requires write mode and an admin key. See [Managing extensions](#managing-extensions). |
 | `FLARUM_DOCS` | optional | On by default. Set `0`/`false`/`off` to hide the official-docs tools (`flarum_docs_search`/`get`/`list`). They read the public docs only, never your forum. |
+| `FLARUM_DEV` | optional | On by default. Set `0`/`false`/`off` to hide the extension-development reference tool (`flarum_dev`). Static guidance; never touches your forum. |
 | `FLARUM_TIMEOUT` | optional | Request timeout in ms (default 30000) |
 | `FLARUM_USER_AGENT` | optional | Override the `User-Agent` sent to your forum. Defaults to `mcp-for-flarum/<version> (+repo url)`. See [Behind Cloudflare or a WAF](#behind-cloudflare-or-a-waf). |
 
