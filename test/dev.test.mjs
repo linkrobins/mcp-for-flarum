@@ -97,3 +97,12 @@ test("the Tier 3 contracts are present", async () => {
   const scaling = textOf(await call(t.get("flarum_dev"), { topic: "scaling" }));
   assert.ok(scaling.includes("onOneServer") && scaling.includes("Extend\\Console"), "scaling should cover console/scheduling");
 });
+
+test("the porting (1.x -> 2.0) topic is selectable and covers the big breaking changes", async () => {
+  const t = register();
+  const porting = textOf(await call(t.get("flarum_dev"), { topic: "porting" }));
+  assert.match(porting, /Porting a 1\.x extension/);
+  for (const k of ["AbstractSerializer", "Extend\\ApiResource", "Extend\\SearchDriver", "app.registry", "^8.3"]) {
+    assert.ok(porting.includes(k), `porting should cover ${k}`);
+  }
+});

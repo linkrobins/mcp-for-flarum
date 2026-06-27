@@ -142,6 +142,20 @@ const SECTIONS: Record<string, { title: string; body: string }> = {
 - **Write release notes for the people who install the extension** (forum admins), not for developers: describe what the user experiences, in plain language. The release/tag body can serve as the changelog.
 - Commit messages: imperative subject; body that explains the root cause, the fix, and how you verified it. Keep them honest about what was and wasn't tested.`,
   },
+  porting: {
+    title: "Porting a 1.x extension to 2.0",
+    body: `A checklist of the breaking changes, biggest first. Port against a real 2.0 extension (flarum/tags, flarum/likes) as a reference, and prefer scaffolding a fresh \`flarum-cli init\` 2.0 skeleton and moving your logic into it over mutating the 1.x tree.
+- **composer.json**: \`flarum/core: ^1.0\` becomes \`^2.0\`; \`php: ^7.4\` becomes **\`^8.3\`**; set other \`flarum/*\` deps to \`"*"\`; add \`"minimum-stability": "beta"\` while 2.0 is pre-stable. Transitive bumps you may feel: Laravel 8 to 13, Symfony 5 to 7, Carbon 2 to 3, Flysystem 1 to 3.
+- **Serializers are gone (the biggest change).** Delete every \`AbstractSerializer\` and the \`Extend\\ApiSerializer\` extender. A resource is now a \`Flarum\\Api\\Resource\\AbstractDatabaseResource\` with \`type()\`/\`model()\`/\`fields()\`, registered with \`Extend\\ApiResource\`; to add fields to core's resources use \`(new Extend\\ApiResource(DiscussionResource::class))->fields(MyFields::class)\` returning \`Schema\\*\` objects (\`Schema\\Boolean\`/\`Str\`/\`Integer\`/\`Relationship\\ToOne\`/\`ToMany\`, built \`::make('name')->get()/->writable()/->set()/->visible()\`). See "Adding a field to an existing resource" under Backend.
+- **Controllers are gone too.** Delete \`Extend\\ApiController\` and the \`AbstractCreate/Show/List/Update/DeleteController\` classes; customize endpoints with \`->endpoint(Endpoint\\Index::class, fn ($e) => …)\` (\`Flarum\\Api\\Endpoint\\*\`) and read the actor/request via \`Flarum\\Api\\Context\` (\`$context->getActor()\`).
+- **Search/filtering rewritten.** Delete \`Extend\\Filter\`, \`AbstractFilterer\`, and all **backend gambits** (gambits are frontend-only now). Register filters via \`Extend\\SearchDriver(DatabaseSearchDriver::class)->addFilter(SomeSearcher::class, MyFilter::class)\` implementing \`Flarum\\Search\\Filter\\FilterInterface\`. Namespaces moved \`Flarum\\Query\\*\` to \`Flarum\\Search\\*\`, and DB search now hands you an **Eloquent** builder, not a query builder.
+- **Models**: \`protected $dates\` and \`Extend\\Model->dateAttribute()\` are gone; use \`$casts = ['x' => 'datetime']\` or \`->cast('x', 'datetime')\`. Relation methods keep their names but now want explicit generic return types (\`@return HasMany<Model, $this>\`).
+- **Notifications**: \`Extend\\Notification->type(Blueprint, Serializer, [...])\` (3-arg) becomes \`->type(Blueprint, ['alert', 'email'])\` (2-arg; the serializer arg is gone), and the Blueprint must implement \`AlertableInterface\` for the alert channel. Email \`getEmailView()\` becomes \`getEmailViews()\` returning \`['text' => …, 'html' => …]\` (split blades into \`views/emails/{html,plain}/\`).
+- **Frontend imports**: cross-extension imports need the \`ext:\` prefix (\`import X from 'ext:flarum/tags/...'\`); stop importing from \`@flarum/core\`; the compat layer is gone.
+- **Frontend admin**: \`app.extensionData\` is now **\`app.registry\`** (or the declarative \`Admin\` extender). Common component moves: the \`avatar()\`/\`icon()\` helpers became \`Avatar\`/\`Icon\` components; \`Modal\` split into \`Modal\` + \`FormModal\`; \`IndexPage.prototype.sidebar\` moved to a new \`IndexSidebar\` component.
+- **Locale HTML**: literal tags like \`<a href='{link}'>\` in en.yml become custom vnode tags (\`<link>...</link>\`) with the vnode passed as a parameter (the no-raw-angle-bracket rule).
+- **Tooling & testing**: \`flarum-webpack-config ^2\` to \`^3\`, \`flarum-tsconfig ^1\` to \`^2\`; PHPUnit 9 to 12 with **PHP 8 attributes** (\`#[Test]\`) instead of docblock annotations; \`flarum/phpstan ^2\` at level 6 (generic rename \`TModelClass\` to \`TModel\`); point reusable CI workflows at the framework's \`@2.x\` branch.`,
+  },
 };
 
 const TOPIC_KEYS = Object.keys(SECTIONS) as [string, ...string[]];
@@ -168,7 +182,7 @@ export function registerDevTools(server: McpServer): void {
         "architecture, composer.json, the TypeScript frontend, backend (API resources/models/migrations), " +
         "scaling (queue-driver portability, Redis, multi-server file storage), optional ecosystem " +
         "integrations (realtime, audit, fof widgets, fof sitemap), i18n, testing, static analysis & CI, " +
-        "and releasing. Combines the conventions the official docs establish, the de-facto FriendsOfFlarum " +
+        "releasing, and porting a 1.x extension to 2.0. Combines the conventions the official docs establish, the de-facto FriendsOfFlarum " +
         "standard, and patterns that prevent real production bugs " +
         "(fail-closed API fields, lazy-chunk-safe extends, atomic creation, the PHPStan/testing setup). " +
         "Consult it before scaffolding, when adding a feature, or when reviewing extension code. " +
@@ -180,8 +194,8 @@ export function registerDevTools(server: McpServer): void {
           .optional()
           .describe(
             "Section to return: scaffold, composer, frontend, backend, scaling, " +
-              "integrations, i18n, testing, quality-ci, release (or 'all' / omit for " +
-              "the full reference).",
+              "integrations, i18n, testing, quality-ci, release, porting (or 'all' / " +
+              "omit for the full reference).",
           ),
       },
     },
