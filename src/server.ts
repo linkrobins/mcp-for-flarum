@@ -8,7 +8,7 @@ import { registerTroubleshootTool } from "./tools/troubleshoot.js";
 import { diagClientFromEnv, registerDiagnosticTools } from "./tools/diagnostics.js";
 import { registerExtensionPrompts, registerTroubleshootPrompts } from "./prompts.js";
 
-export const VERSION = "0.7.1";
+export const VERSION = "0.7.2";
 
 /**
  * Default outbound User-Agent. Explicit and identifiable so that forums behind a

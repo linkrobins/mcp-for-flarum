@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented here.
 
+## 0.7.2
+
+- New `flarum_dev` topic: **porting a 1.x extension to 2.0**, a checklist of the breaking changes biggest-first (serializers and controllers replaced by API resources and endpoints, the search/filter rewrite, the model and notification changes, the `app.extensionData` to `app.registry` rename, cross-extension `ext:` imports, and the PHP 8.3 / PHPUnit 12 / toolchain bumps). Cross-referenced against the official upgrade guide and verified against real Flarum source. Reference content only.
+
 ## 0.7.1
 
 - Rounds out the `flarum_dev` reference with the remaining core authoring contracts, each verified against real Flarum source: building the admin settings and permissions UI (the `app.registry` API, which replaced `app.extensionData` in 2.0), defining a custom model end to end (the Eloquent model, relationships and casts, making it permission-scoped, and registering it on the frontend store), registering console commands and scheduled tasks (with the multi-server safety rules), structured error handling (typed exceptions that become clean 4xx responses instead of a 500), and rate limiting write endpoints. Reference content only.
