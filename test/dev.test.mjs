@@ -85,3 +85,15 @@ test("the Tier 2 contracts are present", async () => {
     assert.ok(integrations.includes(k), `integrations should cover ${k}`);
   }
 });
+
+test("the Tier 3 contracts are present", async () => {
+  const t = register();
+  const backend = textOf(await call(t.get("flarum_dev"), { topic: "backend" }));
+  for (const k of ["app.registry", "ScopeVisibilityTrait", "Extend\\ErrorHandling", "Extend\\ThrottleApi"]) {
+    assert.ok(backend.includes(k), `backend should cover ${k}`);
+  }
+  // The big 2.0 rename must be documented, not the stale name.
+  assert.ok(backend.includes("app.registry"), "must use the 2.0 app.registry name");
+  const scaling = textOf(await call(t.get("flarum_dev"), { topic: "scaling" }));
+  assert.ok(scaling.includes("onOneServer") && scaling.includes("Extend\\Console"), "scaling should cover console/scheduling");
+});
