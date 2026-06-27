@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented here.
 
+## 0.5.3
+
+- Fixed: raw API calls made with `flarum_request` that send a body (for example saving a setting like the forum's custom CSS, or any non-standard endpoint that takes a JSON payload) could fail with a server error. The body was being wrapped twice, so the forum rejected it before doing anything. It is now unwrapped correctly, so these writes go through. Everyday actions through the typed tools (creating and editing discussions, posts, users, moderation, and so on) were never affected.
+
 ## 0.4.0
 
 - Official Flarum 2.0 docs, built in. The AI can now search and read the official documentation at docs.flarum.org/2.x while it works on your forum, so it can check how a setting, permission, or feature is meant to work before changing anything. Three new tools: `flarum_docs_search` (find the right page), `flarum_docs_get` (read a full page), and `flarum_docs_list` (browse what pages exist). It reads the live documentation, so answers always reflect the current 2.0 docs without any update on your side. These only read the public docs (never your forum or its key), so they work even in read-only mode and without an API key. On by default; turn them off with `FLARUM_DOCS=0`.

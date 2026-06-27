@@ -3,6 +3,27 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { FlarumClient } from "../flarum-client.js";
 import { result, errorResult, trimDoc, fieldsSchema } from "./shared.js";
 
+/**
+ * Normalize a free-form request body before it goes to the client.
+ *
+ * `flarum_request.body` is typed as `unknown`, and the MCP transport can hand
+ * it over already JSON-encoded as a string. Since the client JSON.stringifies
+ * the body once more, that would reach Flarum double-encoded, and its
+ * ParseJsonBody middleware 500s (`withParsedBody ... received string`). If the
+ * body arrived as a string that decodes to an object/array, decode it back to
+ * the value it represents. A string that isn't JSON-encoded structure (raw
+ * text, or a JSON primitive) is left untouched.
+ */
+function normalizeBody(body: unknown): unknown {
+  if (typeof body !== "string") return body;
+  try {
+    const parsed: unknown = JSON.parse(body);
+    return parsed !== null && typeof parsed === "object" ? parsed : body;
+  } catch {
+    return body;
+  }
+}
+
 export function registerTools(server: McpServer, client: FlarumClient): void {
   // ---- Read tools: always available (even in read-only mode) ----
 
@@ -153,7 +174,7 @@ export function registerTools(server: McpServer, client: FlarumClient): void {
     },
     async ({ method, path, query, body }) => {
       try {
-        const data = await client.request({ method, path, query, body });
+        const data = await client.request({ method, path, query, body: normalizeBody(body) });
         return result(data);
       } catch (err) {
         return errorResult(err);

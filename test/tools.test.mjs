@@ -63,6 +63,43 @@ test("flarum_request allows GET in read-only", async () => {
   assert.equal(calls.length, 1);
 });
 
+test("flarum_request POST with an object body reaches the network single-encoded", async () => {
+  stubFetch({});
+  const t = register(writeClient());
+  await call(t.get("flarum_request"), {
+    method: "POST",
+    path: "/settings",
+    body: { custom_less: "body{}" },
+  });
+  assert.equal(calls[0].init.method, "POST");
+  // One layer of JSON: decoding once yields the object, not a string.
+  assert.deepEqual(JSON.parse(calls[0].init.body), { custom_less: "body{}" });
+});
+
+test("flarum_request normalizes a JSON-string body so it is not double-encoded", async () => {
+  // The MCP transport can hand the free-form `body` over already stringified;
+  // the client stringifies again, which used to reach Flarum double-encoded and
+  // 500 in ParseJsonBody. The handler must decode the string back to an object.
+  stubFetch({});
+  const t = register(writeClient());
+  await call(t.get("flarum_request"), {
+    method: "POST",
+    path: "/settings",
+    body: '{"custom_less":"body{}"}',
+  });
+  const decoded = JSON.parse(calls[0].init.body);
+  assert.equal(typeof decoded, "object");
+  assert.deepEqual(decoded, { custom_less: "body{}" });
+});
+
+test("flarum_request leaves a genuine non-JSON string body untouched", async () => {
+  stubFetch({});
+  const t = register(writeClient());
+  await call(t.get("flarum_request"), { method: "POST", path: "/raw", body: "hello world" });
+  // Not JSON-structured: passed through as-is (client still JSON-encodes it).
+  assert.equal(calls[0].init.body, JSON.stringify("hello world"));
+});
+
 test("flarum_list maps to GET with paging/fields/filter and defaults limit to 20", async () => {
   stubFetch({ data: [] });
   const t = register(writeClient());
