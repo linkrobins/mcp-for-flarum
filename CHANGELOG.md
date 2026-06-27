@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented here.
 
+## 0.6.1
+
+- Stronger `flarum_dev` guidance so the AI is less likely to ship an extension with a subtle bug. The reference now covers cross-database portability (Flarum runs on MySQL, MariaDB, PostgreSQL, and SQLite, and the standard CI tests all of them), including the kind of query that passes on MySQL but fails only on PostgreSQL, and how PostgreSQL aborts a whole transaction on the first failed statement. It also adds: explicit permission gating on every endpoint (deny by default), a frontend export-naming pitfall that can break bundles, relabeling notifications that aren't about a discussion, practical test-setup helpers, community-health files for published extensions, and a reminder that the git tag (not a commit titled "Release") is what actually publishes. No configuration change; this is reference content only.
+
 ## 0.6.0
 
 - Extension-development reference, built in. A new `flarum_dev` tool gives the AI a curated reference for building or reviewing a Flarum 2.0 extension: scaffolding and architecture, `composer.json`, the TypeScript frontend, backend (API resources/models/migrations), i18n, testing, static analysis & CI, and releasing. It combines the conventions the official docs establish, the de-facto FriendsOfFlarum standard, and patterns that prevent real production bugs (fail-closed API fields, lazy-chunk-safe frontend extends, atomic record creation, the PHPStan and testing setup, and more). Ask for the whole reference or narrow it to one area with a `topic` (scaffold, composer, frontend, backend, i18n, testing, quality-ci, release). It is static guidance that never touches your forum or its key, so it works in any mode, including read-only and without an API key. On by default; turn it off with `FLARUM_DEV=0`.
