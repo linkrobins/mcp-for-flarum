@@ -5,7 +5,7 @@ import { registerExtensionTools } from "./tools/extensions.js";
 import { registerDocsTools } from "./tools/docs.js";
 import { diagClientFromEnv, registerDiagnosticTools } from "./tools/diagnostics.js";
 
-export const VERSION = "0.5.1";
+export const VERSION = "0.5.2";
 
 /**
  * Default outbound User-Agent. Explicit and identifiable so that forums behind a
