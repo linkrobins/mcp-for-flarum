@@ -75,6 +75,25 @@ const SECTIONS: Record<string, { title: string; body: string }> = {
 - **Settings**: \`Extend\\Settings\` with \`->default()\` + \`->serializeToForum()\` (camelCase frontend key); keep server-only settings unserialized. Consider a default-true **kill-switch** setting so the behaviour can be neutralised without disabling the extension.
 - **Prefer the model store on the frontend** (\`app.store.find\`/\`createRecord().save()\`) over raw requests, so caching and reactivity work.`,
   },
+  scaling: {
+    title: "Scaling: queues, Redis, files, multi-server",
+    body: `Write the extension so it stays correct on a real production stack (background workers, Redis, object storage, multiple app servers), not just a single-box default install.
+- **Queue-driver portability.** Stock Flarum defaults to the \`sync\` queue, so a dispatched job runs **inline, in the web request, before \`dispatch()\` returns**; \`database\`/\`redis\` defer it to a separate worker process, possibly minutes later and on another machine. Write every job to be correct under **both**: don't read its result on the next line assuming it hasn't run (under \`sync\` it has), and don't assume it was backgrounded (slow work under \`sync\` blocks the user's request). If work truly must not block, document that admins need a real queue driver, never assume one.
+- **Job design.** Dispatch through the bus (inject \`Illuminate\\Contracts\\Bus\\Dispatcher\`, or the \`dispatch()\` helper); extend \`Flarum\\Queue\\AbstractJob\` (it implements \`ShouldQueue\` + \`Queueable\` + \`SerializesModels\`). Keep the payload small and serializable: pass **IDs, not Eloquent models**, and re-fetch in \`handle()\` (a queued model reloads by primary key at run time, so the handler sees current DB state and throws if the row was deleted). Make handlers **idempotent and retry-safe** — delivery is at-least-once, so a job can run twice (use \`ShouldBeUnique\` to dedupe). Use **no request-scoped state** (under a CLI worker there is no session/\`$request\`/actor): capture the actor's id in the constructor and re-resolve in \`handle()\`. Set \`$tries\`/\`$timeout\`/\`backoff()\` and implement \`failed()\`.
+- **Cache / Redis (fof/redis).** When fof/redis is installed, cache, session, and queue become Redis-backed and **shared across every web node and worker**. Keep shared or persistent state in the cache abstraction (\`Illuminate\\Contracts\\Cache\\Repository\`), **never** in the filesystem, APCu, or a static/in-process variable (those are per-process and break the moment the forum is multi-node). Treat cache as **non-authoritative**: it can evict, flush, or be unavailable at any time, so always have a recompute-on-miss path and never store the only copy of anything there. **Namespace** your cache keys (you share one keyspace with core and every other extension) and use tags for grouped invalidation instead of flushing the store.
+- **Horizon (fof/horizon)** only supervises the \`redis\` queue. To be Horizon-friendly, queue real jobs (never \`dispatchSync\`), add \`displayName()\` and \`tags()\` so they're findable in the dashboard, put heavy work on a **named queue** (\`public static ?string $onQueue\`) so an operator can balance it separately, and keep handlers short with sane \`timeout\`/\`tries\` so a worker isn't pinned.
+- **Multi-server file storage.** Never write to local paths (\`storage_path()\`/\`public_path()\`/\`fopen()\`/\`move_uploaded_file()\`) for anything another request or server must read: behind a load balancer, local disk is not shared and \`storage/\` is not guaranteed shared. Declare a disk with \`Extend\\Filesystem->disk('my-ext', ...)\`, write through it (inject \`Illuminate\\Contracts\\Filesystem\\Factory\`, then \`->disk('my-ext')->put($path, $bytes)\`), and let admins repoint it at S3 or shared storage via the \`disk_driver.my-ext\` config/setting key. Build public URLs with \`$disk->url($path)\`, never a hand-made web-root path (on S3 it's a bucket/CDN host). Multi-server-safe state is the DB plus a disk on shared/object storage.
+- **Assets vs runtime files.** Ship static JS/CSS via \`Extend\\Frontend\`/\`Extend\\Asset\`; \`flarum assets:publish\` copies them onto the assets disk, so they follow the admin's S3 driver automatically. Files generated at runtime (uploads, exports, generated images) go to a disk **you** declared, never into the published-assets tree. An uploaded file or a \`tmpfile()\` is valid only within the one request on the one server that holds it, so stream it onto a disk before the request ends and never hand a queued job a local temp path. Set disk **visibility** (\`Visibility::PUBLIC\`/\`PRIVATE\`), don't \`chmod\`.`,
+  },
+  integrations: {
+    title: "Optional ecosystem integrations",
+    body: `Light up when popular optional extensions are present, without ever hard-depending on them.
+- **Soft-dependence pattern (use this for everything below).** List the extension under \`suggest\` (or \`extra.flarum-extension.optional-dependencies\`), **never \`require\`**. Backend: wrap the integration extenders in \`(new Extend\\Conditional())->whenExtensionEnabled('<ext-id>', fn () => [ ... ])\` so its classes are never referenced when it's absent. Frontend: gate with \`'<ext-id>' in flarum.extensions ? [ ... ] : []\` and resolve the other extension's classes at **initializer time** via \`flarum.reg.get('<ext-id>', '<path>')\` (guard for \`undefined\`), never a top-level \`ext:\`/\`import\` (which forces a hard dep and is load-order fragile). Always degrade gracefully: the feature must still work by normal page load when the optional extension, or its server-side daemon/worker, is missing.
+- **flarum/realtime** (\`flarum-realtime\`): integration is mostly **implicit** — fire standard notification Blueprints and standard domain events (post/discussion lifecycle) and realtime pushes them automatically, serialized **per recipient through your API resource**, so correct resource visibility/fields *is* the contract. Only for custom mutations do you wire \`Flarum\\Realtime\\Extend\\Realtime->broadcastModelEvent(...)\` (plus \`registerModelEndpoint()\` for non-core models) and the frontend \`RealtimeExtend\`. It needs a websocket daemon **and** a running queue, so never assume a push arrives: live updates are an enhancement over normal loads, never the transport of record.
+- **flarum/audit** (\`flarum-audit\`): not automatic. Make a custom action auditable with \`Flarum\\Audit\\Extend\\Audit->listen(MyEvent::class, 'myext.action', fn ($e) => [...])\`. Store **IDs under conventional keys** (\`discussion_id\`/\`post_id\`/\`user_id\`/\`tag_id\`) so entries render as links, and add the \`flarum-audit.lib.browser.<action>\` locale key or the entry shows a raw JSON dump. Attribution is request-scoped (actor and IP come from the HTTP middleware), so actions in jobs/console log a null actor; the log is append-only, so never put secrets or tokens in the payload.
+- **fof/forum-widgets-core** (\`fof-forum-widgets-core\`): frontend-only, no backend extender. In an initializer resolve \`flarum.reg.get('fof-forum-widgets-core', 'common/components/Widget')\` (the base class) and \`'common/extend/Widgets'\` (the extender), guard for \`undefined\`, subclass \`Widget\` (override \`className\`/\`icon\`/\`title\`/\`content\`), then register \`new Widgets().add({ key, component, placement, isUnique })\` where \`placement\` is \`start_top | start_bottom | top | bottom | end\`.
+- **fof/sitemap** (\`fof-sitemap\`): register \`(new FoF\\Sitemap\\Extend\\Sitemap())->addResource(MyResource::class)\` (or \`->addStaticUrl('route-name')\` for a fixed page) inside a Conditional. \`MyResource extends FoF\\Sitemap\\Resources\\Resource\` and implements \`query()\` (return only **guest-visible** rows), \`url($model)\`, \`priority()\`, and \`frequency()\`. Cached mode writes to the \`flarum-sitemaps\` disk (default local \`{public}/sitemaps\`, not the DB), so on multiple servers repoint that disk to shared/S3 storage or build on a shared-storage node.`,
+  },
   i18n: {
     title: "Internationalization",
     body: `- **Every user-facing string is a translation key** across all four layers: frontend (\`app.translator.trans\`/JSX \`tx\`), API exceptions, validation/rate-limit messages, and email blade templates. Inject \`TranslatorInterface\` where needed.
@@ -131,8 +150,10 @@ export function registerDevTools(server: McpServer): void {
       description:
         "A development reference for building or reviewing a Flarum 2.0 extension: scaffolding and " +
         "architecture, composer.json, the TypeScript frontend, backend (API resources/models/migrations), " +
-        "i18n, testing, static analysis & CI, and releasing. Combines the conventions the official docs " +
-        "establish, the de-facto FriendsOfFlarum standard, and patterns that prevent real production bugs " +
+        "scaling (queue-driver portability, Redis, multi-server file storage), optional ecosystem " +
+        "integrations (realtime, audit, fof widgets, fof sitemap), i18n, testing, static analysis & CI, " +
+        "and releasing. Combines the conventions the official docs establish, the de-facto FriendsOfFlarum " +
+        "standard, and patterns that prevent real production bugs " +
         "(fail-closed API fields, lazy-chunk-safe extends, atomic creation, the PHPStan/testing setup). " +
         "Consult it before scaffolding, when adding a feature, or when reviewing extension code. " +
         "Pair with flarum_docs_search/flarum_docs_get for the authoritative API reference. " +
@@ -142,8 +163,9 @@ export function registerDevTools(server: McpServer): void {
           .enum([...TOPIC_KEYS, "all"])
           .optional()
           .describe(
-            "Section to return: scaffold, composer, frontend, backend, i18n, testing, " +
-              "quality-ci, release (or 'all' / omit for the full reference).",
+            "Section to return: scaffold, composer, frontend, backend, scaling, " +
+              "integrations, i18n, testing, quality-ci, release (or 'all' / omit for " +
+              "the full reference).",
           ),
       },
     },
