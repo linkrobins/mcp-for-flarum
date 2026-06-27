@@ -5,12 +5,12 @@
  * when Flarum won't boot, so it cannot go through the JSON:API (which is dead
  * during a boot fatal). Instead the MCP asks the srvup control plane, which owns
  * container access, to run a FIXED, whitelisted, read-only diagnostic command
- * (POST DIAG_URL). srvup resolves the tenant FROM the bearer token — there is no
- * tenant in the URL — and enforces that the token may only diag its own forum.
+ * (POST DIAG_URL). srvup resolves the tenant FROM the bearer token, there is no
+ * tenant in the URL, and enforces that the token may only diag its own forum.
  *
  * Managed-only by construction: these tools register only when DIAG_URL (and a
  * token) are present. srvup injects DIAG_URL solely into the hosting compose, so
- * self-hosters never get it — the tools never appear for them, no stub, no hint.
+ * self-hosters never get it, the tools never appear for them, no stub, no hint.
  *
  * Wired in server.ts:
  *   const diag = diagClientFromEnv();
@@ -24,7 +24,7 @@ import { result, errorResult } from "./shared.js";
 /**
  * The v1 command whitelist (LOCKED 2026-06-26). These ids are the ONLY values
  * the client may send; srvup maps each to a fixed read-only command server-side.
- * The command is never derived from client input — only selected from this set.
+ * The command is never derived from client input, only selected from this set.
  */
 export const DIAG_CHECKS = [
   "flarum_info", // php flarum info
@@ -58,7 +58,7 @@ export interface DiagResult {
 export interface DiagClientOptions {
   /** Full diag endpoint, e.g. https://linkrobins.com/hosting/mcp/diag */
   url: string;
-  /** Bearer token — this client's MCP_AUTH_TOKEN. srvup resolves the tenant from it. */
+  /** Bearer token, this client's MCP_AUTH_TOKEN. srvup resolves the tenant from it. */
   token: string;
   userAgent?: string;
   timeoutMs?: number;
@@ -67,7 +67,7 @@ export interface DiagClientOptions {
 /**
  * Thin client for the srvup diag endpoint. Mirrors the snapshot hook in
  * flarum-client.ts: bearer auth, identifiable UA, AbortController timeout. Holds
- * no container access itself — srvup does the privileged work and enforces (from
+ * no container access itself, srvup does the privileged work and enforces (from
  * the token alone) that this caller may only diag its own forum.
  */
 export class DiagClient {
@@ -109,7 +109,7 @@ export class DiagClient {
       }
       if (!res.ok) {
         throw new Error(
-          `Diag API ${check} failed: ${res.status} ${res.statusText} — ${
+          `Diag API ${check} failed: ${res.status} ${res.statusText}, ${
             typeof parsed === "string" ? parsed : JSON.stringify(parsed)
           }`,
         );
@@ -163,7 +163,7 @@ export function registerDiagnosticTools(server: McpServer, diag: DiagClient): vo
       description:
         "Run a single read-only diagnostic against the managed forum's container via the control " +
         "plane. Works even when the forum won't boot (does not use the Flarum API). Returns raw " +
-        "captured output for you to interpret — it does not change anything. Checks: flarum_info, " +
+        "captured output for you to interpret, it does not change anything. Checks: flarum_info, " +
         "flarum_log, web_log, composer_diagnose, disk_perms, queue_status.",
       inputSchema: {
         check: z.enum(DIAG_CHECKS).describe("Which whitelisted check to run."),
@@ -199,7 +199,7 @@ export function registerDiagnosticTools(server: McpServer, diag: DiagClient): vo
         "first when a managed forum is down or just broke after an update. Then synthesize a " +
         "FINDINGS REPORT for each issue: severity, symptom (what's observed), evidence (the exact " +
         "log/CLI excerpt), likely cause, suggested fix, confidence, and what you couldn't check. " +
-        "RECOMMEND fixes only — never state that anything was changed; these tools are read-only.",
+        "RECOMMEND fixes only, never state that anything was changed; these tools are read-only.",
       inputSchema: {
         lines: z
           .number()

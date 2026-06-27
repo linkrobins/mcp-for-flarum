@@ -171,8 +171,8 @@ export class FlarumClient {
       );
     }
 
-    // Pre-change safety snapshot: a write is about to happen and is allowed —
-    // ask the host for a restore point first (best-effort, once per session).
+    // Pre-change safety snapshot: a write is about to happen and is allowed,
+    // so ask the host for a restore point first (best-effort, once per session).
     if (mutating) this.triggerSnapshot();
 
     const url = `${this.apiRoot()}${path}${this.buildQuery(opts.query)}`;

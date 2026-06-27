@@ -34,8 +34,8 @@ MCP client → MCP server (managed mode) → srvup control-plane diag API → te
 When Flarum 500s on boot the JSON:API returns HTML/500 and the existing read-only
 API tools are blind. Via srvup→container we can still:
 
-- `php flarum info` — versions, PHP, DB driver, debug flag, mail/queue/url config
-- `php flarum migrate:status` — pending migrations (top cause of post-update breakage)
+- `php flarum info`, versions, PHP, DB driver, debug flag, mail/queue/url config
+- `php flarum migrate:status`, pending migrations (top cause of post-update breakage)
 - tail `storage/logs/flarum.log` **and** the PHP-FPM/web error log (a true boot
   fatal often fires before Flarum's logger initializes, so it only shows in the
   web log)
@@ -49,7 +49,7 @@ tail + `composer diagnose` are usually enough to name the culprit.
 
 ## Managed-only enforcement (self-hosted sees NOTHING)
 
-Decided: self-hosted sees nothing at all — no tools, no stub, no "managed-tier
+Decided: self-hosted sees nothing at all, no tools, no stub, no "managed-tier
 feature" message, no mention in errors. Enforced structurally, in three layers:
 
 1. **Capability gating by credential possession, not a flag.** Diag tools register
@@ -81,11 +81,11 @@ if (diag) registerDiagnosticTools(server, diag);
 
 ## Safety posture (same as the rest of the MCP)
 
-- **Whitelisted commands only** — a fixed menu of read-only diagnostics, never
+- **Whitelisted commands only**, a fixed menu of read-only diagnostics, never
   free-form shell. The whitelist IS the security boundary (see TODO below).
-- **Read-only / fail-closed** — diagnose and *recommend* (clear cache, run
+- **Read-only / fail-closed**, diagnose and *recommend* (clear cache, run
   migration, disable extension X); never auto-apply.
-- **Tenant-scoped + audited** — a client can only diagnose its own forum; every
+- **Tenant-scoped + audited**, a client can only diagnose its own forum; every
   diag call is logged on the srvup side.
 
 ## srvup diag-API contract (v1)
@@ -141,15 +141,15 @@ Response:
 Lives in `src/tools/diagnostics.ts`, wired into `createMcpServer` behind the
 gate. Shape:
 
-- **`DiagClient`** — thin control-plane HTTP client (mirrors the snapshot hook in
+- **`DiagClient`**, thin control-plane HTTP client (mirrors the snapshot hook in
   `flarum-client.ts`: bearer token, AbortController timeout, identifiable UA).
-- **`diagClientFromEnv()` / `managedDiagnosticsEnabled()`** — gate on `DIAG_URL`
+- **`diagClientFromEnv()` / `managedDiagnosticsEnabled()`**, gate on `DIAG_URL`
   plus a token (`DIAG_TOKEN`, falling back to `MCP_AUTH_TOKEN`). Self-hosters
   can't mint these, so the tools never register for them (the structural gate
   from §managed-only).
 - **Tools** (register only behind that gate):
-  - `flarum_diag` — run ONE whitelisted check; returns raw `{check, ok, raw, ...}`.
-  - `flarum_triage` — run the standard boot-error bundle (info, migrate_status,
+  - `flarum_diag`, run ONE whitelisted check; returns raw `{check, ok, raw, ...}`.
+  - `flarum_triage`, run the standard boot-error bundle (info, migrate_status,
     flarum_log, web_log, composer_diagnose) and return the combined raw outputs for
     the model to fuse into the findings report.
 
@@ -178,7 +178,7 @@ The LLM fuses raw command outputs into this shape. It recommends; it does not ac
 ## v1 command whitelist (LOCKED 2026-06-26)
 
 The whitelist is the security boundary. v1 is locked to exactly these seven
-read-only checks — nothing outside this list executes:
+read-only checks, nothing outside this list executes:
 
 - [x] `flarum info`
 - [x] `flarum migrate:status`
@@ -188,7 +188,7 @@ read-only checks — nothing outside this list executes:
 - [x] disk usage + `storage/`/`assets/` writability & perms check
 - [x] queue/horizon worker liveness ping
 
-Explicitly **out of v1** (mutating — surface as recommendations only, never run):
+Explicitly **out of v1** (mutating, surface as recommendations only, never run):
 `cache:clear`, `migrate`, extension enable/disable, `composer` install/update.
 
 Still open (implementation details, do not block the locked list):

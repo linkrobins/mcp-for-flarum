@@ -197,8 +197,8 @@ node dist/index.js --http
 
 It serves:
 
-- `POST /mcp` — the MCP endpoint (Streamable HTTP, stateless)
-- `GET /health` — health check for load balancers / uptime monitors
+- `POST /mcp`, the MCP endpoint (Streamable HTTP, stateless)
+- `GET /health`, health check for load balancers / uptime monitors
 
 Hosting-specific configuration:
 
