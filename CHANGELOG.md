@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented here.
 
+## 0.6.2
+
+- `flarum_dev` now guides extensions to be compatible with user text-resize controls from day one. The frontend reference documents the reading-size and UI-scale contract (the `--lr-text-scale` / `--lr-ui-scale` CSS custom properties and the `FontSizer-text` / `FontSizer-ui` opt-in classes used by the Font Sizer extension), framed as a general accessibility pattern that does nothing when no such control is installed. It also warns about the `1em`-versus-`rem` pitfall, so a heading doesn't get accidentally shrunk. Reference content only; no configuration change.
+
 ## 0.6.1
 
 - Stronger `flarum_dev` guidance so the AI is less likely to ship an extension with a subtle bug. The reference now covers cross-database portability (Flarum runs on MySQL, MariaDB, PostgreSQL, and SQLite, and the standard CI tests all of them), including the kind of query that passes on MySQL but fails only on PostgreSQL, and how PostgreSQL aborts a whole transaction on the first failed statement. It also adds: explicit permission gating on every endpoint (deny by default), a frontend export-naming pitfall that can break bundles, relabeling notifications that aren't about a discussion, practical test-setup helpers, community-health files for published extensions, and a reminder that the git tag (not a commit titled "Release") is what actually publishes. No configuration change; this is reference content only.
