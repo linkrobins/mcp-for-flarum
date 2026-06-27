@@ -28,7 +28,6 @@ import { result, errorResult } from "./shared.js";
  */
 export const DIAG_CHECKS = [
   "flarum_info", // php flarum info
-  "migrate_status", // php flarum migrate:status
   "flarum_log", // tail storage/logs/flarum.log (args: lines, level)
   "web_log", // tail PHP-FPM/web error log (args: lines)
   "composer_diagnose", // composer diagnose + dependency-conflict parse
@@ -151,7 +150,6 @@ export function managedDiagnosticsEnabled(): boolean {
 /** The standard bundle flarum_triage runs for a "won't boot / just broke" report. */
 const TRIAGE_BUNDLE: DiagCheck[] = [
   "flarum_info",
-  "migrate_status",
   "flarum_log",
   "web_log",
   "composer_diagnose",
@@ -166,7 +164,7 @@ export function registerDiagnosticTools(server: McpServer, diag: DiagClient): vo
         "Run a single read-only diagnostic against the managed forum's container via the control " +
         "plane. Works even when the forum won't boot (does not use the Flarum API). Returns raw " +
         "captured output for you to interpret — it does not change anything. Checks: flarum_info, " +
-        "migrate_status, flarum_log, web_log, composer_diagnose, disk_perms, queue_status.",
+        "flarum_log, web_log, composer_diagnose, disk_perms, queue_status.",
       inputSchema: {
         check: z.enum(DIAG_CHECKS).describe("Which whitelisted check to run."),
         lines: z
@@ -196,7 +194,7 @@ export function registerDiagnosticTools(server: McpServer, diag: DiagClient): vo
     {
       title: "Triage a broken or misbehaving forum",
       description:
-        "Run the standard boot-error diagnostic bundle (flarum info, migrate status, flarum log, " +
+        "Run the standard boot-error diagnostic bundle (flarum info, flarum log, " +
         "web/PHP-FPM error log, composer diagnose) and return all raw outputs together. Use this " +
         "first when a managed forum is down or just broke after an update. Then synthesize a " +
         "FINDINGS REPORT for each issue: severity, symptom (what's observed), evidence (the exact " +
