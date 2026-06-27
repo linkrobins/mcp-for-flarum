@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented here.
 
+## 0.7.1
+
+- Rounds out the `flarum_dev` reference with the remaining core authoring contracts, each verified against real Flarum source: building the admin settings and permissions UI (the `app.registry` API, which replaced `app.extensionData` in 2.0), defining a custom model end to end (the Eloquent model, relationships and casts, making it permission-scoped, and registering it on the frontend store), registering console commands and scheduled tasks (with the multi-server safety rules), structured error handling (typed exceptions that become clean 4xx responses instead of a 500), and rate limiting write endpoints. Reference content only.
+
 ## 0.7.0
 
 - Much deeper `flarum_dev` guidance, so an extension built through the MCP is correct on a real production stack and a good citizen in the wider ecosystem, not just on a default single-box forum. Two new topic areas: **scaling** (queue-driver portability across sync/database/redis/Horizon, Redis and multi-server file storage, and portable URLs behind a sub-path/reverse-proxy/CDN) and **integrations** (soft-dependent integration with realtime, audit, the FriendsOfFlarum widgets and sitemap, tags, the moderation extensions, likes/reactions, file uploads, and mentions). The core backend guidance also gained the contracts for extending an existing API resource, adding a notification type, making content searchable/filterable, slugging a model, and custom post formatting, plus a consolidated persistent-runtime (Swoole/Octane/FrankenPHP) safety rule. Every contract was verified against real Flarum source.
