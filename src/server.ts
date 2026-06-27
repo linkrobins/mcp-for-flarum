@@ -5,6 +5,7 @@ import { registerExtensionTools } from "./tools/extensions.js";
 import { registerDocsTools } from "./tools/docs.js";
 import { registerDevTools } from "./tools/dev.js";
 import { diagClientFromEnv, registerDiagnosticTools } from "./tools/diagnostics.js";
+import { registerExtensionPrompts } from "./prompts.js";
 
 export const VERSION = "0.6.2";
 
@@ -17,18 +18,51 @@ export const VERSION = "0.6.2";
 export const DEFAULT_USER_AGENT = `mcp-for-flarum/${VERSION} (+https://github.com/linkrobins/mcp-for-flarum)`;
 
 /**
- * Server-level instructions returned in the MCP initialize response. Compliant
- * clients inject these into the model's context as standing guidance about how
- * to use this server, so this is the strongest server-side lever for steering
- * the AI toward the built-in Flarum knowledge (short of client-side hooks the
- * server can't control). Kept short on purpose: it is spent on every session.
+ * Build the server-level instructions returned in the MCP initialize response.
+ * Compliant clients inject these into the model's context as standing guidance,
+ * so this is the strongest server-side lever for steering the AI toward the
+ * built-in Flarum knowledge (short of client-side hooks the server can't
+ * control). Built per-session from the enabled capabilities so the AI is only
+ * ever told about tools that are actually registered for it.
  */
-export const SERVER_INSTRUCTIONS =
-  "This server connects you to a Flarum forum's API and ships built-in Flarum 2.0 knowledge. Use the right tool for the job:\n" +
-  "- BEFORE writing, scaffolding, modifying, or reviewing ANY Flarum 2.0 extension code, call `flarum_dev` for the relevant topic(s) and follow its contracts. It encodes the conventions and compatibility rules that prevent real production bugs: cross-database portability, fail-closed API fields, lazy-chunk-safe frontend extends, queue-driver portability (sync/database/redis/Horizon), Redis and multi-server file storage, and soft-dependent integration with realtime/audit/widgets/sitemap. Treat it as a requirement, not a suggestion, and prefer it over training-data assumptions about Flarum.\n" +
-  "- Use `flarum_docs_search` / `flarum_docs_get` for the authoritative, live API reference (extenders, endpoints, permissions).\n" +
-  "- Use the `flarum_*` API tools (list/get/create/update/delete/request) to read or change forum data; respect read-only mode.\n" +
-  "When a task involves building or auditing an extension, consulting `flarum_dev` first is the expected workflow.";
+export function buildInstructions(caps: {
+  docs: boolean;
+  dev: boolean;
+  extensions: boolean;
+  diagnostics: boolean;
+}): string {
+  const { dev } = caps;
+  const lines: string[] = [
+    "This server connects you to a Flarum forum's API and ships built-in Flarum 2.0 knowledge. Prefer these tools and references over training-data assumptions about Flarum (its API and conventions change). Use the right capability for the job:",
+    "- **Forum data**: read with `flarum_list`/`flarum_get`/`flarum_search` and write with `flarum_create`/`flarum_update`/`flarum_delete`/`flarum_create_discussion`/`flarum_reply` (`flarum_request` is the raw escape hatch). Call `flarum_whoami` first to confirm which user and permissions you're acting as. Respect read-only mode (write tools are hidden and mutations refused when it's on), and prefer a typed tool over a hand-built URL.",
+  ];
+  if (dev) {
+    lines.push(
+      "- **Building or reviewing extension code**: BEFORE writing, scaffolding, modifying, or reviewing ANY Flarum 2.0 extension, call `flarum_dev` for the relevant topic(s) and follow its contracts. They encode the conventions and compatibility rules that prevent real production bugs: cross-database portability, fail-closed API fields, lazy-chunk-safe frontend extends, queue-driver portability (sync/database/redis/Horizon), Redis and multi-server file storage, and soft-dependent integration with realtime/audit/widgets/sitemap. Treat it as a requirement. The `build-flarum-extension`, `review-flarum-extension`, and `check-flarum-compatibility` prompts run this workflow for you.",
+    );
+  }
+  if (caps.docs) {
+    lines.push(
+      "- **How Flarum itself works**: use `flarum_docs_search`/`flarum_docs_get`/`flarum_docs_list` for the authoritative, live 2.0 documentation (extenders, endpoints, permissions, settings) instead of recalling it from memory.",
+    );
+  }
+  if (caps.extensions) {
+    lines.push(
+      "- **Installing/updating extensions on the forum**: use the `flarum_ext_*` tools. Run `flarum_ext_why_not` to check compatibility before installing, don't auto-enable, and take a backup before a major or bulk update, since enabling an incompatible extension can take the whole site down.",
+    );
+  }
+  if (caps.diagnostics) {
+    lines.push(
+      "- **Troubleshooting a managed forum**: use `flarum_triage` for a boot-error/post-update bundle and `flarum_diag` for a single check. These are read-only and recommend-only: diagnose and suggest fixes, never auto-apply.",
+    );
+  }
+  if (dev) {
+    lines.push(
+      "When a task involves building or auditing an extension, consulting `flarum_dev` first is the expected workflow.",
+    );
+  }
+  return lines.join("\n");
+}
 
 /** Build a FlarumClient from environment variables. */
 export function clientFromEnv(): FlarumClient {
@@ -95,16 +129,26 @@ export function devEnabled(): boolean {
 
 /** Build a fully-wired MCP server for a given Flarum client. */
 export function createMcpServer(client: FlarumClient): McpServer {
+  // Resolve enabled capabilities up front so the instructions describe exactly
+  // the tools that get registered below.
+  const docs = docsEnabled();
+  const dev = devEnabled();
+  const extensions = extensionsEnabled();
+  const diag = diagClientFromEnv();
+
   const server = new McpServer(
     { name: "mcp-for-flarum", version: VERSION },
-    { instructions: SERVER_INSTRUCTIONS },
+    { instructions: buildInstructions({ docs, dev, extensions, diagnostics: diag !== null }) },
   );
   registerTools(server, client);
-  if (extensionsEnabled()) registerExtensionTools(server, client);
-  if (docsEnabled()) registerDocsTools(server, process.env.FLARUM_USER_AGENT || DEFAULT_USER_AGENT);
-  if (devEnabled()) registerDevTools(server);
+  if (extensions) registerExtensionTools(server, client);
+  if (docs) registerDocsTools(server, process.env.FLARUM_USER_AGENT || DEFAULT_USER_AGENT);
+  if (dev) {
+    registerDevTools(server);
+    // Prompts orchestrate the flarum_dev workflow, so they ride with it.
+    registerExtensionPrompts(server);
+  }
   // Managed-only: registers just when srvup injected DIAG_URL (hosting stacks).
-  const diag = diagClientFromEnv();
   if (diag) registerDiagnosticTools(server, diag);
   return server;
 }
