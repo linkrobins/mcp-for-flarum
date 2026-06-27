@@ -59,7 +59,17 @@ test("the scaling and integrations topics are selectable and on-topic", async ()
   }
   const integrations = textOf(await call(t.get("flarum_dev"), { topic: "integrations" }));
   assert.match(integrations, /Optional ecosystem integrations/);
-  for (const k of ["flarum-realtime", "flarum-audit", "fof-forum-widgets-core", "fof-sitemap"]) {
+  for (const k of ["flarum-realtime", "flarum-audit", "fof-forum-widgets-core", "fof-sitemap", "flarum-tags"]) {
     assert.ok(integrations.includes(k), `integrations should cover ${k}`);
   }
+});
+
+test("the Tier 1 core/deployment contracts are present", async () => {
+  const t = register();
+  const backend = textOf(await call(t.get("flarum_dev"), { topic: "backend" }));
+  for (const k of ["Extend\\ApiResource", "NotificationSyncer", "RequestUtil::getActor"]) {
+    assert.ok(backend.includes(k), `backend should cover ${k}`);
+  }
+  const scaling = textOf(await call(t.get("flarum_dev"), { topic: "scaling" }));
+  assert.ok(scaling.includes("UrlGenerator") && scaling.includes("config.php"), "scaling should cover URL portability");
 });
