@@ -73,3 +73,15 @@ test("the Tier 1 core/deployment contracts are present", async () => {
   const scaling = textOf(await call(t.get("flarum_dev"), { topic: "scaling" }));
   assert.ok(scaling.includes("UrlGenerator") && scaling.includes("config.php"), "scaling should cover URL portability");
 });
+
+test("the Tier 2 contracts are present", async () => {
+  const t = register();
+  const backend = textOf(await call(t.get("flarum_dev"), { topic: "backend" }));
+  for (const k of ["Extend\\SearchDriver", "Extend\\ModelUrl", "Extend\\Formatter"]) {
+    assert.ok(backend.includes(k), `backend should cover ${k}`);
+  }
+  const integrations = textOf(await call(t.get("flarum_dev"), { topic: "integrations" }));
+  for (const k of ["is_locked", "is_approved", "flarum-likes", "UploadedFileInterface", "flarum-mentions"]) {
+    assert.ok(integrations.includes(k), `integrations should cover ${k}`);
+  }
+});
