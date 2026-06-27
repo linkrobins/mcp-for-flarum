@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented here.
 
+## 0.7.0
+
+- Much deeper `flarum_dev` guidance, so an extension built through the MCP is correct on a real production stack and a good citizen in the wider ecosystem, not just on a default single-box forum. Two new topic areas: **scaling** (queue-driver portability across sync/database/redis/Horizon, Redis and multi-server file storage, and portable URLs behind a sub-path/reverse-proxy/CDN) and **integrations** (soft-dependent integration with realtime, audit, the FriendsOfFlarum widgets and sitemap, tags, the moderation extensions, likes/reactions, file uploads, and mentions). The core backend guidance also gained the contracts for extending an existing API resource, adding a notification type, making content searchable/filterable, slugging a model, and custom post formatting, plus a consolidated persistent-runtime (Swoole/Octane/FrankenPHP) safety rule. Every contract was verified against real Flarum source.
+- New **`flarum_troubleshoot`** tool: a plain-language guide for forum admins and non-developers to diagnose a broken or misbehaving forum and prepare a request for help (safe first-aid fixes, how to run `php flarum info` and find logs on their hosting, what common errors mean, and how to write a redacted support request and where to post it). It is the self-service companion to the managed diagnostics: static knowledge, no server access, works for every self-hoster. On by default; turn it off with `FLARUM_TROUBLESHOOT=0`.
+- New **prompts** that run the right workflow for you end to end: `build-flarum-extension`, `review-flarum-extension`, `check-flarum-compatibility`, and `prepare-flarum-support-request`.
+- The server now sends **instructions** on connect that steer the AI across every enabled capability (forum-data tools, `flarum_dev`, `flarum_docs`, extension management, troubleshooting), so it reaches for the built-in Flarum knowledge instead of guessing. The instructions are assembled from the capabilities actually enabled for the session.
+
 ## 0.6.2
 
 - `flarum_dev` now guides extensions to be compatible with user text-resize controls from day one. The frontend reference documents the reading-size and UI-scale contract (the `--lr-text-scale` / `--lr-ui-scale` CSS custom properties and the `FontSizer-text` / `FontSizer-ui` opt-in classes used by the Font Sizer extension), framed as a general accessibility pattern that does nothing when no such control is installed. It also warns about the `1em`-versus-`rem` pitfall, so a heading doesn't get accidentally shrunk. Reference content only; no configuration change.
