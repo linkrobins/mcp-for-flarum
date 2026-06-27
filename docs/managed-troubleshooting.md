@@ -1,6 +1,6 @@
-# Managed Troubleshooting (design)
+# Managed Troubleshooting
 
-Status: design / not built. Target: paid managed (LR-hosted) tier only.
+Status: shipped (`flarum_diag` / `flarum_triage`, gated on `DIAG_URL` + token). Target: paid managed (LR-hosted) tier only. Intentionally absent from the public CHANGELOG: self-hosters never see these tools, so there is nothing to announce to them.
 
 Lets a managed client invoke the MCP to isolate and troubleshoot forum problems
 (boot errors, post-update breakage, mail/queue failures) and get back a findings
@@ -67,12 +67,16 @@ feature" message, no mention in errors. Enforced structurally, in three layers:
 Mirror the existing gate shape in `src/server.ts`:
 
 ```ts
-// only true when control-plane auth is present (self-hosters cannot obtain it)
-export function managedDiagnosticsEnabled(): boolean {
-  return Boolean(process.env.MCP_CONTROL_PLANE_URL && process.env.MCP_CONTROL_PLANE_TOKEN);
+// only non-null when control-plane auth is present (self-hosters cannot obtain it)
+export function diagClientFromEnv(): DiagClient | null {
+  const url = process.env.DIAG_URL;
+  const token = process.env.DIAG_TOKEN || process.env.MCP_AUTH_TOKEN;
+  if (!url || !token) return null;
+  return new DiagClient({ url, token });
 }
 // in createMcpServer():
-if (managedDiagnosticsEnabled()) registerDiagnosticTools(server, controlPlaneClient);
+const diag = diagClientFromEnv();
+if (diag) registerDiagnosticTools(server, diag);
 ```
 
 ## Safety posture (same as the rest of the MCP)
@@ -90,8 +94,8 @@ Single endpoint, one whitelisted check per call. srvup resolves `{tenant}` to a
 container it owns, runs the fixed command for `check`, and returns captured output.
 
 ```
-POST {CONTROL_PLANE_URL}/internal/mcp/diag/{tenant}
-Authorization: Bearer {CONTROL_PLANE_TOKEN}
+POST {DIAG_URL}/internal/mcp/diag/{tenant}
+Authorization: Bearer {DIAG_TOKEN}
 Content-Type: application/json
 
 { "check": "<whitelisted-id>", "args": { "lines": 200, "level": "error" } }
@@ -134,21 +138,22 @@ Response:
 
 ## MCP side: client + tools
 
-Reference scaffold lives in `src/tools/diagnostics.ts` (NOT yet wired into
-`createMcpServer` — see scaffold header). Shape:
+Lives in `src/tools/diagnostics.ts`, wired into `createMcpServer` behind the
+gate. Shape:
 
 - **`DiagClient`** — thin control-plane HTTP client (mirrors the snapshot hook in
   `flarum-client.ts`: bearer token, AbortController timeout, identifiable UA).
-- **`managedDiagnosticsEnabled()`** — true only when both `MCP_CONTROL_PLANE_URL`
-  and `MCP_CONTROL_PLANE_TOKEN` are present. Self-hosters can't mint these, so the
-  tools never register for them (the structural gate from §managed-only).
+- **`diagClientFromEnv()` / `managedDiagnosticsEnabled()`** — gate on `DIAG_URL`
+  plus a token (`DIAG_TOKEN`, falling back to `MCP_AUTH_TOKEN`). Self-hosters
+  can't mint these, so the tools never register for them (the structural gate
+  from §managed-only).
 - **Tools** (register only behind that gate):
   - `flarum_diag` — run ONE whitelisted check; returns raw `{check, ok, raw, ...}`.
   - `flarum_triage` — run the standard boot-error bundle (info, migrate_status,
     flarum_log, web_log, composer_diagnose) and return the combined raw outputs for
     the model to fuse into the findings report.
 
-Wiring (one line in `createMcpServer`, intentionally left undone in the scaffold):
+Wiring in `createMcpServer` (one line, behind the gate):
 
 ```ts
 const diag = diagClientFromEnv();

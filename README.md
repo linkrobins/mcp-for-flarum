@@ -63,6 +63,17 @@ Registered only when `FLARUM_EXTENSIONS=1` and the forum has the official [`flar
 | `flarum_ext_configure_composer` | Read/set `minimum-stability`, repositories, or private registry auth |
 | `flarum_ext_tasks` | List install/update job history and Composer output (poll async jobs) |
 
+**Managed hosting only (not available to self-hosters):**
+
+Two capabilities exist only on the Link Robins managed tier. They are gated on environment that only the hosting stack injects (`DIAG_URL` and `SNAPSHOT_URL`), and those point at Link Robins' own infrastructure: a self-hoster cannot set them to anything useful, so the diagnostic tools never register and the snapshot hook stays a no-op. Setting them by hand does nothing because there is no backend to answer.
+
+| Capability | Gate | What it does |
+| --- | --- | --- |
+| `flarum_diag` / `flarum_triage` | `DIAG_URL` + token | Read-only troubleshooting of a managed forum (boot errors, post-update breakage, mail/queue failures) via the hosting control plane, which works even when Flarum won't boot. See [docs/managed-troubleshooting.md](docs/managed-troubleshooting.md). |
+| Pre-change snapshot | `SNAPSHOT_URL` + token | Best-effort restore point taken before the first write of a session. See `SNAPSHOT_URL` under [Hosting](#hosting-http-transport). |
+
+Everything above this section (generic, convenience, docs, dev, and extension-management tools) is fully available to self-hosters; only these two are reserved to managed hosting. The MCP source itself is source-available but proprietary (see [License](#license)).
+
 ## Configuration
 
 | Variable | Required | Description |
