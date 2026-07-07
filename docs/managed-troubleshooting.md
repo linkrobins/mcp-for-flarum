@@ -23,7 +23,7 @@ MCP client → MCP server (managed mode) → srvup control-plane diag API → te
 - The MCP server does **not** hold `docker exec`/SSH. srvup owns container access
   and the tenant→container mapping; the MCP just calls srvup's diag endpoints.
 - The actual command-execution logic lives in **srvup**, not in this
-  (source-available) package. This repo only ever contains a *client* for an API
+  (open-source) package. This repo only ever contains a *client* for an API
   that self-hosters cannot authenticate to.
 - Because the path is srvup→container, it does **not** depend on Flarum's HTTP API
   being up. This is what makes boot-error diagnosis possible (the JSON:API is dead
@@ -57,7 +57,7 @@ feature" message, no mention in errors. Enforced structurally, in three layers:
    + a tenant binding. No credential → tools are never added to the advertised
    tool list. This is stronger than the `FLARUM_EXTENSIONS` opt-in (a self-hoster
    *can* set an env flag; they *cannot* mint control-plane auth).
-2. **Logic lives in srvup, not here.** The source-available package contains only
+2. **Logic lives in srvup, not here.** The open-source package contains only
    a client for an unreachable API. Nothing privileged ships to self-hosters.
 3. **Server-side authz is the real boundary.** Even a forged managed-mode flag
    fails: srvup authenticates the caller and maps it to a tenant it owns; unknown

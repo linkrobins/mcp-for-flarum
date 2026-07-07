@@ -72,7 +72,7 @@ Two capabilities exist only on the Link Robins managed tier. They are gated on e
 | `flarum_diag` / `flarum_triage` | `DIAG_URL` + token | Read-only troubleshooting of a managed forum (boot errors, post-update breakage, mail/queue failures) via the hosting control plane, which works even when Flarum won't boot. See [docs/managed-troubleshooting.md](docs/managed-troubleshooting.md). |
 | Pre-change snapshot | `SNAPSHOT_URL` + token | Best-effort restore point taken before the first write of a session. See `SNAPSHOT_URL` under [Hosting](#hosting-http-transport). |
 
-Everything above this section (generic, convenience, docs, dev, and extension-management tools) is fully available to self-hosters; only these two are reserved to managed hosting. The MCP source itself is source-available but proprietary (see [License](#license)).
+Everything above this section (generic, convenience, docs, dev, and extension-management tools) is available to self-hosters. These two only activate when their hosting control-plane env vars (`DIAG_URL` / `SNAPSHOT_URL`) are set, which point at Link Robins' managed platform — so in practice they're managed-hosting-only, but nothing in the code is closed off. The MCP is [MIT-licensed](#license).
 
 ## Configuration
 
@@ -239,9 +239,7 @@ FLARUM_URL=... FLARUM_API_KEY=... node dist/index.js
 
 ## License
 
-Source-available and proprietary. Copyright (c) 2026 Link Robins. You may self-host and run it for your own use; you may not redistribute it or provide it to others as a hosted service. Link Robins is the only entity permitted to offer it as a hosted service. See [LICENSE](LICENSE) for the full terms.
-
-> **No third-party hosting.** MCP directories, registries, and aggregators (for example Glama, Smithery, and similar platforms) may index and link to this repository, but may not build-and-run, "install", deploy, sandbox, or otherwise expose a hosted or remote instance of this server to their users. Hosting and running it as a service for third parties is reserved to Link Robins (LICENSE sections 2(b) and 4). See [NOTICE](NOTICE).
+[MIT](LICENSE) © Link Robins. Free and open source — self-host it, modify it, and use it however you like.
 
 ## Trademarks
 
