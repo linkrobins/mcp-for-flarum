@@ -9,7 +9,7 @@ import { diagClientFromEnv, registerDiagnosticTools } from "./tools/diagnostics.
 import { registerExtensionPrompts, registerTroubleshootPrompts } from "./prompts.js";
 import { withStrictInputs } from "./tools/shared.js";
 
-export const VERSION = "0.7.2";
+export const VERSION = "0.7.3";
 
 /**
  * Default outbound User-Agent. Explicit and identifiable so that forums behind a

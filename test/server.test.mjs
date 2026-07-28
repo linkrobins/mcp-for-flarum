@@ -70,3 +70,13 @@ test("createMcpServer advertises the instructions over a real connection", async
 
   await client.close();
 });
+
+// VERSION rides in the MCP handshake and in DEFAULT_USER_AGENT, so a bump that
+// misses one leaves the server misreporting itself. (The lockfile silently sat
+// at 0.2.2 while package.json read 0.7.2 until this was noticed.)
+test("VERSION matches the version in package.json", async () => {
+  const { readFileSync } = await import("node:fs");
+  const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
+  const { VERSION } = await import("../dist/server.js");
+  assert.equal(VERSION, pkg.version);
+});

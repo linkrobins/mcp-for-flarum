@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented here.
 
+## 0.7.3
+
+- **Fixed:** setting a discussion's tags — or any relationship-only update — through `flarum_update` returned a 500. The request omitted the `attributes` key entirely, and `flarum/subscriptions`, part of every default install, reads it unguarded while saving and threw on `null`. The tag write had already been dispatched by then, so the error landed on an operation that looked half-applied. Requests now always carry an `attributes` object, empty when there is nothing to change; that is valid JSON:API and a no-op everywhere else. The underlying bug is Flarum's, but this unblocks callers against forums as they ship today.
+- **Changed:** an unknown tool parameter is now rejected instead of silently discarded. Every tool already advertised `"additionalProperties": false`, but unknown keys were stripped at runtime — so a caller that guessed a parameter name got a success response and a wrong side effect with nothing indicating anything had been ignored. Calling `flarum_create_discussion` with `tags` instead of `tagIds` created a permanently untagged discussion and reported success; a mistyped filter key on a read silently returned unfiltered data. The published JSON Schema is byte-identical, so nothing callers can see changed; only enforcement caught up with what was already advertised. Calls passing extra parameters will now get a validation error where they previously got silence.
+- Internal: the version the server reports in its MCP handshake and User-Agent is now asserted equal to `package.json`, and the lockfile version — which had drifted to 0.2.2 — is back in sync.
+
 ## 0.7.2
 
 - New `flarum_dev` topic: **porting a 1.x extension to 2.0**, a checklist of the breaking changes biggest-first (serializers and controllers replaced by API resources and endpoints, the search/filter rewrite, the model and notification changes, the `app.extensionData` to `app.registry` rename, cross-extension `ext:` imports, and the PHP 8.3 / PHPUnit 12 / toolchain bumps). Cross-referenced against the official upgrade guide and verified against real Flarum source. Reference content only.
