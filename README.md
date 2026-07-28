@@ -67,16 +67,16 @@ Registered only when `FLARUM_EXTENSIONS=1` and the forum has the official [`flar
 | `flarum_ext_configure_composer` | Read/set `minimum-stability`, repositories, or private registry auth |
 | `flarum_ext_tasks` | List install/update job history and Composer output (poll async jobs) |
 
-**Managed hosting only (not available to self-hosters):**
+**Control-plane hooks (dormant unless you wire them up):**
 
-Two capabilities exist only on the Link Robins managed tier. They are gated on environment that only the hosting stack injects (`DIAG_URL` and `SNAPSHOT_URL`), and those point at Link Robins' own infrastructure: a self-hoster cannot set them to anything useful, so the diagnostic tools never register and the snapshot hook stays a no-op. Setting them by hand does nothing because there is no backend to answer.
+Two capabilities stay inactive unless you point them at a service that answers them. They are gated on `DIAG_URL` and `SNAPSHOT_URL`; with those unset, which is the default, the diagnostic tools never register and the snapshot hook is a no-op. Nothing here is closed off — the code is [MIT](#license) like the rest, so you can point them at a backend of your own.
 
 | Capability | Gate | What it does |
 | --- | --- | --- |
-| `flarum_diag` / `flarum_triage` | `DIAG_URL` + token | Read-only troubleshooting of a managed forum (boot errors, post-update breakage, mail/queue failures) via the hosting control plane, which works even when Flarum won't boot. See [docs/managed-troubleshooting.md](docs/managed-troubleshooting.md). |
+| `flarum_diag` / `flarum_triage` | `DIAG_URL` + token | Read-only troubleshooting through a hosting control plane (boot errors, post-update breakage, mail/queue failures), which keeps working even when Flarum itself won't boot. See [docs/managed-troubleshooting.md](docs/managed-troubleshooting.md). |
 | Pre-change snapshot | `SNAPSHOT_URL` + token | Best-effort restore point taken before the first write of a session. See `SNAPSHOT_URL` under [Hosting](#hosting-http-transport). |
 
-Everything above this section (generic, convenience, docs, dev, and extension-management tools) is available to self-hosters. These two only activate when their hosting control-plane env vars (`DIAG_URL` / `SNAPSHOT_URL`) are set, which point at Link Robins' managed platform — so in practice they're managed-hosting-only, but nothing in the code is closed off. The MCP is [MIT-licensed](#license).
+Every other tool above (generic, convenience, docs, dev, and extension management) works out of the box with no such backend.
 
 ## Configuration
 
@@ -219,10 +219,6 @@ FLARUM_URL=https://discuss.example.com FLARUM_API_KEY=xxxxx node dist/index.js
 
 Then point your client's `command` at `node /absolute/path/to/mcp-for-flarum/dist/index.js`.
 
-### Prefer not to run anything?
-
-A managed, hosted version is offered by Link Robins, no install, no key management, and usable from web clients. See [linkrobins.com](https://linkrobins.com).
-
 ## Hosting (HTTP transport)
 
 The same binary can run as a long-lived web service over **Streamable HTTP**, so you can host it instead of running it locally. This is what web-based clients (which can't spawn a local process) connect to.
@@ -252,7 +248,7 @@ Hosting-specific configuration:
 | `PORT` | `3000` | HTTP port |
 | `HOST` | `127.0.0.1` | Bind address. Fails closed: it **refuses to bind a non-localhost address unless `MCP_AUTH_TOKEN` is set**. To expose it (e.g. in Docker), set `HOST=0.0.0.0` and a token. |
 | `MCP_AUTH_TOKEN` | _(none)_ | If set, requests must send `Authorization: Bearer <token>`. Required to expose a non-localhost interface. |
-| `SNAPSHOT_URL` | _(none)_ | Optional managed-hosting hook. When set, the server fires a best-effort `POST` here before the **first write** in a session, so a restore point can be taken before AI-driven edits. Failures never block writes; unset for self-hosters. |
+| `SNAPSHOT_URL` | _(none)_ | Optional control-plane hook. When set, the server fires a best-effort `POST` here before the **first write** in a session, so a restore point can be taken before AI-driven edits. Failures never block writes; leave it unset unless you run a backend that answers it. |
 | `SNAPSHOT_TOKEN` | `MCP_AUTH_TOKEN` | Bearer token sent with the `SNAPSHOT_URL` ping. Defaults to `MCP_AUTH_TOKEN`. |
 
 > Security: a hosted instance can read, write, and delete on the forum its key targets. Always run it behind TLS, set `MCP_AUTH_TOKEN` (or front it with your own auth/OAuth proxy), and give the API key's user the least privilege it needs. The Flarum API key stays server-side and is never exposed to clients.
