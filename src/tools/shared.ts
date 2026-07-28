@@ -65,3 +65,47 @@ export const fieldsSchema = z
     "Sparse fieldsets: return only named fields per type to save tokens, " +
       'e.g. { discussions: "title,slug,commentCount", users: "username" }.',
   );
+
+/** The registerTool signature, loosened for the wrapper's internal use. */
+type RegisterTool = (name: string, config: Record<string, unknown>, handler: unknown) => unknown;
+
+/**
+ * Wrap a server so every tool registered through it validates its arguments as
+ * a *strict* object.
+ *
+ * Each tool already advertises `"additionalProperties": false` in its JSON
+ * Schema, but zod's default object mode silently strips unknown keys instead of
+ * rejecting them — so the published contract and the enforced behaviour
+ * disagree. On a server that writes to a live forum that gap is expensive: a
+ * caller that guesses a parameter name (`tags` for `tagIds`, say) gets a
+ * success response and a wrong side effect, with nothing saying a parameter was
+ * discarded.
+ *
+ * Strict objects emit byte-identical JSON Schema, so nothing a caller can see
+ * changes; only enforcement catches up with what was always advertised.
+ *
+ * Applied once at the registration boundary rather than at each call site, so
+ * no tool — including any added later — can be left out.
+ */
+export function withStrictInputs<T extends object>(server: T): T {
+  return new Proxy(server, {
+    get(target, prop, receiver) {
+      const value: unknown = Reflect.get(target, prop, receiver);
+      if (prop !== "registerTool" || typeof value !== "function") return value;
+
+      const register = value as RegisterTool;
+
+      return (name: string, config: Record<string, unknown>, handler: unknown) => {
+        const shape = config?.inputSchema;
+        // Only raw shapes need wrapping. A schema object is already explicit
+        // about how it treats unknown keys, so leave the author's choice alone.
+        const isRawShape =
+          shape !== null && typeof shape === "object" && !(shape instanceof z.ZodType);
+        if (!isRawShape) return register.call(target, name, config, handler);
+
+        const inputSchema = z.object(shape as z.ZodRawShape).strict();
+        return register.call(target, name, { ...config, inputSchema }, handler);
+      };
+    },
+  });
+}

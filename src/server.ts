@@ -7,6 +7,7 @@ import { registerDevTools } from "./tools/dev.js";
 import { registerTroubleshootTool } from "./tools/troubleshoot.js";
 import { diagClientFromEnv, registerDiagnosticTools } from "./tools/diagnostics.js";
 import { registerExtensionPrompts, registerTroubleshootPrompts } from "./prompts.js";
+import { withStrictInputs } from "./tools/shared.js";
 
 export const VERSION = "0.7.2";
 
@@ -167,19 +168,24 @@ export function createMcpServer(client: FlarumClient): McpServer {
       }),
     },
   );
-  registerTools(server, client);
-  if (extensions) registerExtensionTools(server, client);
-  if (docs) registerDocsTools(server, process.env.FLARUM_USER_AGENT || DEFAULT_USER_AGENT);
+  // Register through a wrapper that makes every tool's input schema strict, so
+  // an unknown parameter is rejected rather than silently dropped — see
+  // withStrictInputs. Everything else passes straight through to the server.
+  const reg = withStrictInputs(server);
+
+  registerTools(reg, client);
+  if (extensions) registerExtensionTools(reg, client);
+  if (docs) registerDocsTools(reg, process.env.FLARUM_USER_AGENT || DEFAULT_USER_AGENT);
   if (dev) {
-    registerDevTools(server);
+    registerDevTools(reg);
     // Prompts orchestrate the flarum_dev workflow, so they ride with it.
-    registerExtensionPrompts(server);
+    registerExtensionPrompts(reg);
   }
   if (troubleshoot) {
-    registerTroubleshootTool(server);
-    registerTroubleshootPrompts(server);
+    registerTroubleshootTool(reg);
+    registerTroubleshootPrompts(reg);
   }
   // Managed-only: registers just when srvup injected DIAG_URL (hosting stacks).
-  if (diag) registerDiagnosticTools(server, diag);
+  if (diag) registerDiagnosticTools(reg, diag);
   return server;
 }
