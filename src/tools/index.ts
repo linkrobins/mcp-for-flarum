@@ -265,7 +265,13 @@ export function registerTools(server: McpServer, client: FlarumClient): void {
             data: {
               type,
               id,
-              ...(attributes ? { attributes } : {}),
+              // Always send attributes, even empty. Omitting the key entirely
+              // 500s a relationship-only update (setting a discussion's tags,
+              // say) on any forum running flarum/subscriptions — the default
+              // set — because its Saving listener reads $data['attributes']
+              // unguarded and gets null. An empty object is valid JSON:API and
+              // a no-op for every well-behaved handler.
+              attributes: attributes ?? {},
               ...(relationships ? { relationships } : {}),
             },
           },

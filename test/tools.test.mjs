@@ -143,6 +143,27 @@ test("flarum_update issues PATCH with the id in path and body", async () => {
   });
 });
 
+// A relationship-only PATCH must still carry an attributes key. Without it,
+// flarum/subscriptions' Saving listener reads $data['attributes'] as null and
+// throws, 500ing every tags-only update on a default forum.
+test("flarum_update sends an empty attributes object when only relationships change", async () => {
+  stubFetch({ data: {} });
+  const t = register(writeClient());
+  await call(t.get("flarum_update"), {
+    type: "discussions",
+    id: "42",
+    relationships: { tags: { data: [{ type: "tags", id: "2" }] } },
+  });
+  assert.deepEqual(JSON.parse(calls[0].init.body), {
+    data: {
+      type: "discussions",
+      id: "42",
+      attributes: {},
+      relationships: { tags: { data: [{ type: "tags", id: "2" }] } },
+    },
+  });
+});
+
 test("flarum_delete issues DELETE and returns a deleted marker", async () => {
   stubFetch({});
   const t = register(writeClient());
