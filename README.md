@@ -1,5 +1,9 @@
 # MCP for Flarum
 
+[![npm](https://img.shields.io/npm/v/mcp-for-flarum)](https://www.npmjs.com/package/mcp-for-flarum)
+[![CI](https://github.com/linkrobins/mcp-for-flarum/actions/workflows/ci.yml/badge.svg)](https://github.com/linkrobins/mcp-for-flarum/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 A [Model Context Protocol](https://modelcontextprotocol.io) server for [Flarum](https://flarum.org).
 
 It gives any MCP-compatible AI client (Claude Code, Claude Desktop, Cursor, VS Code, Windsurf, Zed, and others) full access to a Flarum forum's API: read and search discussions and posts, create threads and replies, manage users, tags and groups, moderate content, change settings, and call any third-party extension endpoint.
@@ -130,9 +134,47 @@ How long-running installs are reported depends on your forum's queue:
 
 ## Install & run
 
-Self-host it with the official Docker image, or build it from source. (It is intentionally **not** published to npm.)
+Nothing to install: `npx` fetches and runs it on demand. All you need is [Node.js](https://nodejs.org) 18 or newer. Docker and a from-source build work too, if you prefer them.
 
-### Option 1: Docker (recommended)
+### Option 1: npx (recommended)
+
+Claude Code, one command:
+
+```bash
+claude mcp add flarum \
+  -e FLARUM_URL=https://discuss.example.com \
+  -e FLARUM_API_KEY=xxxxx \
+  -- npx -y mcp-for-flarum
+```
+
+Claude Desktop / Cursor / Windsurf / VS Code / Zed (JSON config):
+
+```json
+{
+  "mcpServers": {
+    "flarum": {
+      "command": "npx",
+      "args": ["-y", "mcp-for-flarum"],
+      "env": {
+        "FLARUM_URL": "https://discuss.example.com",
+        "FLARUM_API_KEY": "xxxxx"
+      }
+    }
+  }
+}
+```
+
+That is the whole setup. Leave out `FLARUM_API_KEY` to start with public read-only access, or add `"FLARUM_MODE": "read"` to guarantee the AI can never change anything.
+
+Pin a version with `mcp-for-flarum@0.8.0` if you'd rather not track the latest. To avoid the fetch on every start, install it once:
+
+```bash
+npm install -g mcp-for-flarum
+```
+
+and use `mcp-for-flarum` as the `command` instead of `npx`.
+
+### Option 2: Docker
 
 For a local Claude client (stdio):
 
@@ -166,7 +208,7 @@ Claude Desktop / Cursor / Windsurf (JSON config):
 }
 ```
 
-### Option 2: From source (no Docker)
+### Option 3: From source
 
 ```bash
 git clone https://github.com/linkrobins/mcp-for-flarum.git
@@ -192,8 +234,10 @@ FLARUM_URL=https://discuss.example.com \
 FLARUM_API_KEY=xxxxx \
 MCP_AUTH_TOKEN=a-long-random-secret \
 PORT=3000 \
-node dist/index.js --http
+npx -y mcp-for-flarum --http
 ```
+
+(From a source checkout, `node dist/index.js --http` does the same.)
 
 It serves:
 

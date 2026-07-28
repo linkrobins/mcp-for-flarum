@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented here.
 
+## 0.8.0
+
+- **Published to npm.** Installing is now `npx -y mcp-for-flarum` — no clone, no build step, no Docker daemon, and nothing left on the machine between runs. Docker is still supported and is still the right choice for a hosted/HTTP deployment, but it is no longer the only way in: requiring it turned a one-line client config into a prerequisite install for anyone who didn't already run Docker. The package ships the compiled `dist` only, is MIT-licensed like the repo, and is published from CI on the version tag with npm provenance, so the tarball is verifiably built from the commit it claims. `npm install -g mcp-for-flarum` is there for anyone who would rather not fetch on every start.
+- The README leads with npx, keeps Docker and from-source as options 2 and 3, and no longer states that the package is deliberately absent from npm.
+
 ## 0.7.3
 
 - **Fixed:** setting a discussion's tags — or any relationship-only update — through `flarum_update` returned a 500. The request omitted the `attributes` key entirely, and `flarum/subscriptions`, part of every default install, reads it unguarded while saving and threw on `null`. The tag write had already been dispatched by then, so the error landed on an operation that looked half-applied. Requests now always carry an `attributes` object, empty when there is nothing to change; that is valid JSON:API and a no-op everywhere else. The underlying bug is Flarum's, but this unblocks callers against forums as they ship today.
