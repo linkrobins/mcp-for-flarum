@@ -20,9 +20,6 @@
   "bugs": {
     "url": "https://github.com/linkrobins/mcp-for-flarum/issues"
   },
-  "publishConfig": {
-    "access": "public"
-  },
   "type": "module",
   "bin": {
     "mcp-for-flarum": "dist/index.js"
@@ -41,7 +38,7 @@
     "start": "node dist/index.js",
     "pretest": "npm run build",
     "test": "node --test",
-    "prepublishOnly": "npm run build"
+    "prepare": "npm run build"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.0",

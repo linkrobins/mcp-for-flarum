@@ -1,6 +1,5 @@
 # MCP for Flarum
 
-[![npm](https://img.shields.io/npm/v/mcp-for-flarum)](https://www.npmjs.com/package/mcp-for-flarum)
 [![CI](https://github.com/linkrobins/mcp-for-flarum/actions/workflows/ci.yml/badge.svg)](https://github.com/linkrobins/mcp-for-flarum/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
@@ -134,47 +133,11 @@ How long-running installs are reported depends on your forum's queue:
 
 ## Install & run
 
-Nothing to install: `npx` fetches and runs it on demand. All you need is [Node.js](https://nodejs.org) 18 or newer. Docker and a from-source build work too, if you prefer them.
+Two one-line options, neither of which needs a checkout: a Docker image, or `npx` pointed straight at this repository. Pick whichever runtime you already have.
 
-### Option 1: npx (recommended)
+Both accept the same configuration. Leave out `FLARUM_API_KEY` to start with public read-only access, or set `FLARUM_MODE=read` to guarantee the AI can never change anything.
 
-Claude Code, one command:
-
-```bash
-claude mcp add flarum \
-  -e FLARUM_URL=https://discuss.example.com \
-  -e FLARUM_API_KEY=xxxxx \
-  -- npx -y mcp-for-flarum
-```
-
-Claude Desktop / Cursor / Windsurf / VS Code / Zed (JSON config):
-
-```json
-{
-  "mcpServers": {
-    "flarum": {
-      "command": "npx",
-      "args": ["-y", "mcp-for-flarum"],
-      "env": {
-        "FLARUM_URL": "https://discuss.example.com",
-        "FLARUM_API_KEY": "xxxxx"
-      }
-    }
-  }
-}
-```
-
-That is the whole setup. Leave out `FLARUM_API_KEY` to start with public read-only access, or add `"FLARUM_MODE": "read"` to guarantee the AI can never change anything.
-
-Pin a version with `mcp-for-flarum@0.8.0` if you'd rather not track the latest. To avoid the fetch on every start, install it once:
-
-```bash
-npm install -g mcp-for-flarum
-```
-
-and use `mcp-for-flarum` as the `command` instead of `npx`.
-
-### Option 2: Docker
+### Option 1: Docker
 
 For a local Claude client (stdio):
 
@@ -208,6 +171,46 @@ Claude Desktop / Cursor / Windsurf (JSON config):
 }
 ```
 
+### Option 2: npx, straight from this repo (no Docker)
+
+If you have [Node.js](https://nodejs.org) 18+ and git, `npx` can fetch, build, and run it in one step. There is nothing to clone and nothing to install.
+
+Claude Code:
+
+```bash
+claude mcp add flarum \
+  -e FLARUM_URL=https://discuss.example.com \
+  -e FLARUM_API_KEY=xxxxx \
+  -- npx -y github:linkrobins/mcp-for-flarum
+```
+
+Claude Desktop / Cursor / Windsurf / VS Code / Zed (JSON config):
+
+```json
+{
+  "mcpServers": {
+    "flarum": {
+      "command": "npx",
+      "args": ["-y", "github:linkrobins/mcp-for-flarum"],
+      "env": {
+        "FLARUM_URL": "https://discuss.example.com",
+        "FLARUM_API_KEY": "xxxxx"
+      }
+    }
+  }
+}
+```
+
+The first run compiles the TypeScript, so it takes a few seconds; npx caches the result and later starts are fast. Pin a release by appending a tag, e.g. `github:linkrobins/mcp-for-flarum#v0.8.0`, which is worth doing for anything long-lived. To install it once instead of resolving on each start:
+
+```bash
+npm install -g github:linkrobins/mcp-for-flarum
+```
+
+and use `mcp-for-flarum` as the `command`.
+
+> This project is not published to the npm registry, so `npm install mcp-for-flarum` will not find it (and if that name ever does resolve, it is not this project). Use the `github:` form above.
+
 ### Option 3: From source
 
 ```bash
@@ -230,7 +233,7 @@ FLARUM_URL=https://discuss.example.com \
 FLARUM_API_KEY=xxxxx \
 MCP_AUTH_TOKEN=a-long-random-secret \
 PORT=3000 \
-npx -y mcp-for-flarum --http
+npx -y github:linkrobins/mcp-for-flarum --http
 ```
 
 (From a source checkout, `node dist/index.js --http` does the same.)

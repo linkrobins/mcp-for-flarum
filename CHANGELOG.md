@@ -4,8 +4,8 @@ All notable changes to this project are documented here.
 
 ## 0.8.0
 
-- **Published to npm.** Installing is now `npx -y mcp-for-flarum` — no clone, no build step, no Docker daemon, and nothing left on the machine between runs. Docker is still supported and is still the right choice for a hosted/HTTP deployment, but it is no longer the only way in: requiring it turned a one-line client config into a prerequisite install for anyone who didn't already run Docker. The package ships the compiled `dist` only, is MIT-licensed like the repo, and is published from CI on the version tag with npm provenance, so the tarball is verifiably built from the commit it claims. `npm install -g mcp-for-flarum` is there for anyone who would rather not fetch on every start.
-- The README leads with npx, keeps Docker and from-source as options 2 and 3, and no longer states that the package is deliberately absent from npm.
+- **Installable without Docker: `npx -y github:linkrobins/mcp-for-flarum`.** Docker was previously the only one-line path, which made a one-line client config into a "first, install Docker" task for anyone who didn't already run it. A `prepare` script now builds the TypeScript when npm installs the package from git, so npx can fetch, compile, and run it in a single step with nothing to clone and nothing left behind. Appending a tag (`#v0.8.0`) pins a release, and `npm install -g github:linkrobins/mcp-for-flarum` installs it once instead of resolving on every start. Docker is unchanged and is still the better choice for a hosted/HTTP deployment.
+- The README documents both paths as equals, notes that the project is not on the npm registry (so a package appearing under that name is not this project), and drops the pitch for the Link Robins managed tier, which no longer exists. The `DIAG_URL` / `SNAPSHOT_URL` hooks are now described for what they are — optional, dormant unless pointed at a backend, and MIT like the rest — rather than as a paid tier self-hosters cannot reach.
 
 ## 0.7.3
 
