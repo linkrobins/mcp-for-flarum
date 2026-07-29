@@ -49,6 +49,14 @@ A development reference for building or reviewing a Flarum 2.0 extension: scaffo
 | --- | --- |
 | `flarum_dev` | Returns the extension-development reference; optional `topic` (scaffold, composer, frontend, backend, i18n, testing, quality-ci, release) to narrow it |
 
+**Troubleshooting (on by default):**
+
+Plain-language help for a broken or misbehaving forum, aimed at admins rather than developers: safe first-aid fixes, how to run `php flarum info` and find your logs on typical hosting, what the common errors actually mean, and how to write a redacted support request. Static knowledge that needs no server access, so it works in any mode, including read-only and with no API key. Turn it off with `FLARUM_TROUBLESHOOT=0`.
+
+| Tool | What it does |
+| --- | --- |
+| `flarum_troubleshoot` | Returns the troubleshooting guide; optional `topic` (first-aid, info, logs, common, report) to narrow it |
+
 **Extension management (opt-in, off by default):**
 
 Registered only when `FLARUM_EXTENSIONS=1` and the forum has the official [`flarum/extension-manager`](https://github.com/flarum/extension-manager) installed. These drive Composer on the server, so they need an admin key and write mode. See [Managing extensions](#managing-extensions).
@@ -77,6 +85,19 @@ Two capabilities stay inactive unless you point them at a service that answers t
 
 Every other tool above (generic, convenience, docs, dev, and extension management) works out of the box with no such backend.
 
+## Prompts
+
+The server also ships prompts: named, ready-made workflows that chain the right tools in the right order, so you don't have to describe the whole job yourself. Clients surface them in their own way (Claude Code lists them as slash commands, Claude Desktop under the prompts menu).
+
+| Prompt | What it does |
+| --- | --- |
+| `build-flarum-extension` | Scaffolds and builds a Flarum 2.0 extension, following the `flarum_dev` contracts |
+| `review-flarum-extension` | Reviews existing extension code against those same contracts |
+| `check-flarum-compatibility` | Checks an extension against real production stacks (queue drivers, Redis, multi-server, sub-path URLs) |
+| `prepare-flarum-support-request` | Assembles a redacted support request from a forum that still loads |
+
+The first three come with the extension-development reference (`FLARUM_DEV`), the last with the troubleshooting guide (`FLARUM_TROUBLESHOOT`); disabling either hides its prompts too.
+
 ## Configuration
 
 | Variable | Required | Description |
@@ -87,7 +108,8 @@ Every other tool above (generic, convenience, docs, dev, and extension managemen
 | `FLARUM_MODE` | optional | `write` (default) or `read`. In `read` mode the server refuses every mutating request (create/update/delete and any non-GET `flarum_request`) and the write tools are hidden. `READ_ONLY=1` does the same. Use it to point an AI at a real forum without risking changes. |
 | `FLARUM_EXTENSIONS` | optional | `1`/`true` registers the extension-management tools (install/update/remove extensions via `flarum/extension-manager`). Off by default; requires write mode and an admin key. See [Managing extensions](#managing-extensions). |
 | `FLARUM_DOCS` | optional | On by default. Set `0`/`false`/`off` to hide the official-docs tools (`flarum_docs_search`/`get`/`list`). They read the public docs only, never your forum. |
-| `FLARUM_DEV` | optional | On by default. Set `0`/`false`/`off` to hide the extension-development reference tool (`flarum_dev`). Static guidance; never touches your forum. |
+| `FLARUM_DEV` | optional | On by default. Set `0`/`false`/`off` to hide the extension-development reference tool (`flarum_dev`) and its prompts. Static guidance; never touches your forum. |
+| `FLARUM_TROUBLESHOOT` | optional | On by default. Set `0`/`false`/`off` to hide the troubleshooting guide (`flarum_troubleshoot`) and its prompt. Static guidance; never touches your forum. |
 | `FLARUM_TIMEOUT` | optional | Request timeout in ms (default 30000) |
 | `FLARUM_USER_AGENT` | optional | Override the `User-Agent` sent to your forum. Defaults to `mcp-for-flarum/<version> (+repo url)`. See [Behind Cloudflare or a WAF](#behind-cloudflare-or-a-waf). |
 
@@ -283,6 +305,8 @@ FLARUM_URL=... FLARUM_API_KEY=... node dist/index.js
 ## License
 
 [MIT](LICENSE) © Link Robins. Free and open source — self-host it, modify it, and use it however you like.
+
+**Commercial and hosted use is welcome, and needs no permission.** Run it for clients, bundle it into a paid product, offer it as a hosted service, fork it, rebrand it: MIT already allows all of that, and there is no separate licence to buy, no key to obtain, and no tier that unlocks anything. Nothing in the code is held back — the two control-plane hooks above are dormant integration points, not a paywall, and you are free to point them at infrastructure of your own. The only ask is the one the licence makes: keep the copyright notice. If you build something with it, I would love to hear about it.
 
 ## Trademarks
 
