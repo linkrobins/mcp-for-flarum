@@ -306,7 +306,7 @@ FLARUM_URL=... FLARUM_API_KEY=... node dist/index.js
 
 [MIT](LICENSE) © Link Robins. Free and open source — self-host it, modify it, and use it however you like.
 
-**Commercial and hosted use is welcome, and needs no permission.** Run it for clients, bundle it into a paid product, offer it as a hosted service, fork it, rebrand it: MIT already allows all of that, and there is no separate licence to buy, no key to obtain, and no tier that unlocks anything. Nothing in the code is held back — the two control-plane hooks above are dormant integration points, not a paywall, and you are free to point them at infrastructure of your own. The only ask is the one the licence makes: keep the copyright notice. If you build something with it, I would love to hear about it.
+**Commercial and hosted use is welcome, and needs no permission.** Run it for clients, bundle it into a paid product, offer it as a hosted service, fork it, rebrand it: MIT already allows all of that, and there is no separate license to buy, no key to obtain, and no tier that unlocks anything. Nothing in the code is held back — the two control-plane hooks above are dormant integration points, not a paywall, and you are free to point them at infrastructure of your own. The only ask is the one the license makes: keep the copyright notice. If you build something with it, I would love to hear about it.
 
 ## Trademarks
 
